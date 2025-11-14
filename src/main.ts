@@ -104,13 +104,14 @@ async function loadZarrMetadata(url: string): Promise<OmeZarrMetadata> {
 
     console.log(`Zarr v${zarr_version} -> OME-Zarr v${omeZarrVersion}`);
 
-    // Extract axes from multiscale
-    const axes = multiscale?.axes || [];
+    // Extract axes from multiscale and cast to our types
+    const axes = (multiscale?.axes || []) as any;
+    const multiscales = multiscale ? [multiscale as any] : [];
 
     const metadata: OmeZarrMetadata = {
       version: omeZarrVersion,
       axes: axes,
-      multiscales: multiscale ? [multiscale] : [],
+      multiscales: multiscales,
       omero: omero,
       labels: undefined,
       plate: undefined,
