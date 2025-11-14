@@ -183,6 +183,14 @@
 
         let schemaData = null;
 
+        // Get URL parameter from query string
+        function getUrlParameter() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('url');
+        }
+
+        const dataUrl = getUrlParameter();
+
         async function loadSchema() {
             try {
                 const response = await fetch('schema.json');
@@ -354,7 +362,12 @@
 
                 if (info.template_url) {
                     const link = document.createElement('a');
-                    link.href = info.template_url;
+                    // Replace {DATA_URL} with the provided URL parameter if available
+                    let url = info.template_url;
+                    if (dataUrl) {
+                        url = url.replace('{DATA_URL}', encodeURIComponent(dataUrl));
+                    }
+                    link.href = url;
                     link.target = '_blank';
                     link.className = 'viewer-link';
                     link.textContent = 'Launch';

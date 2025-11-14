@@ -2,7 +2,7 @@ viewer:
   name: "Neuroglancer"
   version: "2.41.2"
   repo: "https://github.com/google/neuroglancer"
-  template_url: https://neuroglancer-demo.appspot.com/#!{"layers":[{"name":"image","source":"https://fileglancer.int.janelia.org/fc/files/sqMtCw_fjCopduL4/fused-timeseries.zarr","type":"image"}]}
+  template_url: https://neuroglancer-demo.appspot.com/#!{"layers":[{"name":"image","source":"{DATA_URL}","type":"image"}]}
 
 capabilities:
   # Enumeration of OME-Zarr versions that can be loaded
