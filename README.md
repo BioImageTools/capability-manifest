@@ -21,7 +21,7 @@ Each tool could optionally publish a "capability manifest" which describes the t
 
 ## Prototype
 
-There is a (prototype)[https://bioimagetools.github.io/capability-manifest/?url=https://uk1s3.embassy.ebi.ac.uk/idr/zarr/v0.5/idr0066/ExpD_chicken_embryo_MIP.ome.zarr] in this repo which implements a basic compatibility matrix by fetching the individual viewer manifests. 
+There is a [prototype](https://bioimagetools.github.io/capability-manifest/?url=https://uk1s3.embassy.ebi.ac.uk/idr/zarr/v0.5/idr0066/ExpD_chicken_embryo_MIP.ome.zarr) in this repo which implements a basic compatibility matrix by fetching the individual viewer manifests. 
 
 ## Other links
 * [OME-NGFF specifications](https://ngff.openmicroscopy.org)
