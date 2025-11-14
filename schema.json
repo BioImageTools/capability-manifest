@@ -1,0 +1,133 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/JaneliaSciComp/capability-manifest/schema.json",
+  "title": "OME-NGFF Tool Capability Manifest",
+  "description": "A manifest describing a tool's implemented capabilities with regards to the OME-NGFF (OME-Zarr) specification. Tools can publish this manifest to allow platforms to programmatically determine compatibility and feature support.",
+  "type": "object",
+  "required": ["viewer", "capabilities"],
+  "properties": {
+    "viewer": {
+      "type": "object",
+      "description": "Metadata about the OME-NGFF tool or viewer",
+      "required": ["name", "version"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the tool or viewer",
+          "examples": ["Neuroglancer", "Avivator", "Fiji n5-ij Plugin"]
+        },
+        "version": {
+          "type": "string",
+          "description": "The version of the tool that this manifest describes",
+          "examples": ["2.3.1", "0.16.1"]
+        },
+        "repo": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL to the tool's source code repository",
+          "examples": ["https://github.com/google/neuroglancer"]
+        },
+        "template_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "A template URL for launching the viewer with a dataset. Use {DATA_URL} as a placeholder for the dataset URL.",
+          "examples": ["https://example.com/viewer?url={DATA_URL}"]
+        }
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "description": "The tool's support for various OME-NGFF features and specification versions",
+      "required": [
+        "ome_zarr_versions",
+        "rfcs_supported",
+        "axes",
+        "scale",
+        "translation",
+        "channels",
+        "timepoints",
+        "labels",
+        "hcs_plates",
+        "bioformats2raw_layout",
+        "omero_metadata"
+      ],
+      "properties": {
+        "ome_zarr_versions": {
+          "type": "array",
+          "description": "List of OME-NGFF specification versions supported by the tool. When a Zarr group with multiscales metadata containing a version listed here is given to the tool, the tool promises to do something useful. However, it may not support every feature of the specification.",
+          "items": {
+            "type": "number",
+            "examples": [0.4, 0.5]
+          },
+          "default": [],
+          "examples": [[0.4, 0.5]]
+        },
+        "compression_codecs": {
+          "type": "array",
+          "description": "List of compression codecs that the tool can read from OME-Zarr datasets",
+          "items": {
+            "type": "string",
+            "enum": ["blosc", "zstd", "zlib", "lz4", "gzip", "bz2", "lzma"]
+          },
+          "default": [],
+          "examples": [["blosc", "zstd", "zlib", "lz4", "gzip"]]
+        },
+        "rfcs_supported": {
+          "type": "array",
+          "description": "List of RFC numbers that have been implemented on top of the released OME-NGFF versions. Given test data produced for a given RFC listed here, the tool promises to do something useful. However, it may not support every feature of the RFC.",
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "default": [],
+          "examples": [[5, 9]]
+        },
+        "axes": {
+          "type": "boolean",
+          "description": "Whether the tool respects axis names and units as specified in the OME-NGFF multiscales metadata",
+          "default": false
+        },
+        "scale": {
+          "type": "boolean",
+          "description": "Whether the tool respects scaling factors (scale transformations) on multiscales",
+          "default": false
+        },
+        "translation": {
+          "type": "boolean",
+          "description": "Whether the tool respects translation factors (translation transformations) on multiscales, including subpixel offsets for lower scale levels",
+          "default": false
+        },
+        "channels": {
+          "type": "boolean",
+          "description": "Whether the tool supports displaying multiple channels from OME-Zarr datasets",
+          "default": false
+        },
+        "timepoints": {
+          "type": "boolean",
+          "description": "Whether the tool supports displaying multiple timepoints (time series data) from OME-Zarr datasets",
+          "default": false
+        },
+        "labels": {
+          "type": "boolean",
+          "description": "Whether the tool can load and display pixel-annotation metadata found in the 'labels' group according to the OME-NGFF specification",
+          "default": false
+        },
+        "hcs_plates": {
+          "type": "boolean",
+          "description": "Whether the tool can load and display high content screening (HCS) datasets with plate metadata found in the 'plate' group",
+          "default": false
+        },
+        "bioformats2raw_layout": {
+          "type": "boolean",
+          "description": "Whether the tool can open a Zarr that implements the bioformats2raw transitional layout, which allows handling multiple images in a single dataset",
+          "default": false
+        },
+        "omero_metadata": {
+          "type": "boolean",
+          "description": "Whether the tool can interpret OMERO metadata embedded in OME-Zarr, for example by using provided color values to default channel colors",
+          "default": false
+        }
+      }
+    }
+  }
+}
