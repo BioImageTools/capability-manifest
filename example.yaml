@@ -1,0 +1,40 @@
+
+viewer:
+  name: "MyDataViewer"
+  version: "2.3.1"
+  repo: "https://github.com/org/viewer"
+  template_url: "https://example.com/viewer?url={DATA_URL}"
+  
+capabilities:
+  # Enumeration of OME-Zarr versions that can be loaded
+  ome_zarr_versions: [0.4, 0.5]
+
+  # Which additional RFCs are supported?
+  rfcs_supported: [5, 9]
+
+  # Are axis names and units respected?
+  axes: true
+
+  # Are scaling factors respected on multiscales?
+  scale: true
+
+  # Are translation factors respected on multiscales (including subpixel offsets for lower scale levels)?
+  translation: true
+
+  # Does the tool support multiple channels?
+  channels: true
+
+  # Does the tool support multiple timepoints?
+  timepoints: true
+
+  # Are labels loaded when available?
+  labels: true
+
+  # Are HCS plates loaded when available?
+  hcs_plates: false
+
+  # Does the viewer handle multiple images in a bioformats2raw layout?
+  bioformats2raw_layout: false
+
+  # Is the OMERO metadata used to e.g. color the channels?
+  omero_metadata: true
