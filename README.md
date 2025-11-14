@@ -20,8 +20,8 @@ Each tool could optionally publish a "capability manifest" which describes the t
 | hcs_plates | A tool that advertises support will open high content screening datasets found in the "plate" group. |
 
 
-See the [example.yaml](example.yaml) for a conceptual draft of what something like this might look like.
+See the [example.yaml](example.yaml) for a conceptual draft of what an actual manifest might look like.
 
 ## Other links
-* [OME-NGFF specification](https://ngff.openmicroscopy.org)
+* [OME-NGFF specifications](https://ngff.openmicroscopy.org)
 * [OME-NGFF viewer feature matrix](https://ome.github.io/ome-ngff-tools/)
