@@ -1,3 +1,9 @@
 *.bak
+
+# AI agents
 .claude
 CLAUDE.md
+
+# Node
+node_modules
+dist
