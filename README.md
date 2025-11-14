@@ -1,4 +1,4 @@
-# OME-NGFF Capability Manifests
+# OME-NGFF Capability Manifests (DRAFT)
 
 During the **2025 OME-NGFF Workflows Hackathon**, participants discussed the potential need for a way to programmatically determine OME-NGFF tool capabilities. This repo is a place to experiment with schemas for capability manifests for OME-Zarr-compatible tools.
 
@@ -8,7 +8,7 @@ Current OME-NGFF (i.e. OME-Zarr) tools tend to support different aspects of the 
 
 Each tool could optionally publish a "capability manifest" which describes the tool's implementd capabilities with regards to the current and former NGFF Specifications. This manifest could simply live in the tool's Github repo, to be updated whenever relevant changes are made to the code. This manifest can then be interpreted computationally by any platform that wants to launch OME-NGFF tools (OMERO, BFF, Fileglancer, etc.)
 
-## Manifest Specification
+## Manifest Specification (DRAFT)
 
 | Attribute | Description |
 |------------|-------------|
@@ -19,8 +19,9 @@ Each tool could optionally publish a "capability manifest" which describes the t
 | labels | A tool that advertises support will open pixel-annotation metadata found in the "labels" group. |
 | hcs_plates | A tool that advertises support will open high content screening datasets found in the "plate" group. |
 
+## Prototype
 
-See the [example.yaml](example.yaml) for a conceptual draft of what an actual manifest might look like.
+[https://bioimagetools.github.io/capability-manifest/?url=https://uk1s3.embassy.ebi.ac.uk/idr/zarr/v0.5/idr0066/ExpD_chicken_embryo_MIP.ome.zarr](Try it here)
 
 ## Other links
 * [OME-NGFF specifications](https://ngff.openmicroscopy.org)
