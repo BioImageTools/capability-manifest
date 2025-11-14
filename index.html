@@ -115,14 +115,8 @@
             background-color: #45a049;
         }
 
-        .metadata-row td:first-child {
-            font-weight: 600;
-            background-color: #e8f5e9;
-        }
-
-        .metadata-row td {
+        .metadata-row .capability-cell {
             text-align: center;
-            background-color: #f9f9f9;
         }
 
         .capability-description {
@@ -296,15 +290,66 @@
                 thead.appendChild(th);
             });
 
-            // Add link row
-            const linkRow = document.createElement('tr');
-            linkRow.className = 'metadata-row';
-            const linkLabelCell = document.createElement('td');
-            linkLabelCell.textContent = 'Link';
-            linkRow.appendChild(linkLabelCell);
+            // Helper function to create metadata row
+            function createMetadataRow(fieldName) {
+                const row = document.createElement('tr');
+                row.className = 'metadata-row';
 
+                const labelCell = document.createElement('td');
+                const nameSpan = document.createElement('div');
+                nameSpan.textContent = fieldName;
+                labelCell.appendChild(nameSpan);
+
+                // Get description from schema
+                if (schemaData && schemaData.properties && schemaData.properties.viewer && schemaData.properties.viewer.properties[fieldName]) {
+                    const fieldSchema = schemaData.properties.viewer.properties[fieldName];
+                    if (fieldSchema.description) {
+                        const descSpan = document.createElement('span');
+                        descSpan.className = 'capability-description';
+                        descSpan.textContent = fieldSchema.description;
+                        labelCell.appendChild(descSpan);
+                    }
+                }
+
+                row.appendChild(labelCell);
+                return row;
+            }
+
+            // Add version row
+            const versionRow = createMetadataRow('version');
             viewers.forEach(viewer => {
                 const cell = document.createElement('td');
+                cell.className = 'capability-cell';
+                cell.textContent = viewer.viewer.version;
+                versionRow.appendChild(cell);
+            });
+            tbody.appendChild(versionRow);
+
+            // Add repository row
+            const repoRow = createMetadataRow('repo');
+            viewers.forEach(viewer => {
+                const cell = document.createElement('td');
+                cell.className = 'capability-cell';
+                const info = viewer.viewer;
+
+                if (info.repo) {
+                    const link = document.createElement('a');
+                    link.href = info.repo;
+                    link.target = '_blank';
+                    link.className = 'viewer-link';
+                    link.textContent = 'Repository';
+                    cell.appendChild(link);
+                }
+
+                repoRow.appendChild(cell);
+            });
+            tbody.appendChild(repoRow);
+
+            // Add template_url row
+            const linkRow = createMetadataRow('template_url');
+            viewers.forEach(viewer => {
+                const cell = document.createElement('td');
+                cell.className = 'capability-cell';
                 const info = viewer.viewer;
 
                 if (info.template_url) {
@@ -314,43 +359,17 @@
                     link.className = 'viewer-link';
                     link.textContent = 'Launch';
                     cell.appendChild(link);
-                } else if (info.repo) {
-                    const link = document.createElement('a');
-                    link.href = info.repo;
-                    link.target = '_blank';
-                    link.className = 'viewer-link';
-                    link.textContent = 'Repository';
-                    cell.appendChild(link);
-                } else {
-                    cell.textContent = '—';
                 }
 
                 linkRow.appendChild(cell);
             });
             tbody.appendChild(linkRow);
 
-            // Add version row
-            const versionRow = document.createElement('tr');
-            versionRow.className = 'metadata-row';
-            const versionLabelCell = document.createElement('td');
-            versionLabelCell.textContent = 'Version';
-            versionRow.appendChild(versionLabelCell);
-
-            viewers.forEach(viewer => {
-                const cell = document.createElement('td');
-                cell.textContent = viewer.viewer.version;
-                versionRow.appendChild(cell);
-            });
-            tbody.appendChild(versionRow);
-
-            // Collect all unique capabilities
-            const allCapabilities = new Set();
-            viewers.forEach(viewer => {
-                Object.keys(viewer.capabilities).forEach(cap => allCapabilities.add(cap));
-            });
+            // Get capabilities in schema order
+            const capabilitiesOrder = Object.keys(schemaData.properties.capabilities.properties);
 
             // Create rows for each capability
-            Array.from(allCapabilities).sort().forEach(capability => {
+            capabilitiesOrder.forEach(capability => {
                 const row = document.createElement('tr');
 
                 // Capability name cell with description and default value
@@ -358,7 +377,7 @@
                 const capInfo = getCapabilityInfo(capability);
 
                 const nameSpan = document.createElement('div');
-                nameSpan.textContent = formatCapabilityName(capability);
+                nameSpan.textContent = capability;
                 nameCell.appendChild(nameSpan);
 
                 if (capInfo.description) {
