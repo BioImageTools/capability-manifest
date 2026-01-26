@@ -1,11 +1,24 @@
 {
-  "name": "capability-manifest",
-  "version": "1.0.0",
-  "description": "During the **2025 OME-NGFF Workflows Hackathon**, participants discussed the potential need for a way to programmatically determine OME-NGFF tool capabilities. This repo is a place to experiment with schemas for capability manifests for OME-Zarr-compatible tools.",
+  "name": "@bioimagetools/capability-manifest",
+  "version": "0.1.0",
+  "description": "Library to determine OME-Zarr viewer compatibility based on capability manifests",
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "public/viewers"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:lib": "tsc --project tsconfig.lib.json",
     "preview": "vite preview",
     "type-check": "tsc --noEmit"
   },
@@ -13,22 +26,20 @@
     "type": "git",
     "url": "git+https://github.com/BioImageTools/capability-manifest.git"
   },
-  "keywords": [],
+  "keywords": ["ome-zarr", "ome-ngff", "viewer", "compatibility"],
   "author": "",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/BioImageTools/capability-manifest/issues"
   },
   "homepage": "https://github.com/BioImageTools/capability-manifest#readme",
+  "dependencies": {
+    "js-yaml": "^4.1.1"
+  },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^24.10.1",
     "typescript": "^5.9.3",
     "vite": "^7.2.2"
-  },
-  "dependencies": {
-    "js-yaml": "^4.1.1",
-    "ome-zarr.js": "^0.0.17",
-    "zarrita": "^0.5.4"
   }
 }
