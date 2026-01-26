@@ -1,0 +1,19 @@
+# Source files (only ship compiled dist/)
+src/
+tsconfig.json
+tsconfig.lib.json
+vite.config.ts
+
+# Development files
+.git/
+.github/
+node_modules/
+docs/
+
+# Web app specific (PoC only)
+index.html
+src/style.css
+src/app.ts
+
+# Build artifacts from web app
+*.map
