@@ -9,6 +9,7 @@ vite.config.ts
 .github/
 node_modules/
 docs/
+public/
 
 # Web app specific (PoC only)
 index.html
