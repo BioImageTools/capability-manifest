@@ -4,13 +4,13 @@
 import yaml from 'js-yaml';
 import * as omezarr from 'ome-zarr.js';
 import { FetchStore } from 'zarrita';
+import { initializeViewerManifests } from './index.js';
+import { validateViewer } from './validator.js';
 import type {
   Schema,
   ViewerManifest,
   OmeZarrMetadata,
-  ValidationResult,
-  ValidationError,
-  ValidationWarning
+  ValidationResult
 } from './types';
 import './style.css';
 
@@ -125,144 +125,6 @@ async function loadZarrMetadata(url: string): Promise<OmeZarrMetadata> {
     console.error('Error loading Zarr metadata:', error);
     throw new Error(`Failed to load Zarr metadata: ${error.message}`);
   }
-}
-
-// ============================================================================
-// VALIDATION
-// ============================================================================
-function validateViewer(viewer: ViewerManifest, metadata: OmeZarrMetadata): ValidationResult {
-  const errors: ValidationError[] = [];
-  const warnings: ValidationWarning[] = [];
-
-  console.log('='.repeat(80));
-  console.log(`Validating viewer: ${viewer.viewer.name}`);
-  console.log('Metadata:', metadata);
-  console.log('Viewer capabilities:', viewer.capabilities);
-
-  // Check version compatibility - this is critical
-  let dataVersion: number | null = null;
-
-  // Try to extract version from metadata (could be in root or in multiscales)
-  if (metadata.version) {
-    dataVersion = parseFloat(metadata.version);
-    console.log(`Found version in root: ${dataVersion}`);
-  } else if (metadata.multiscales && metadata.multiscales.length > 0 && metadata.multiscales[0].version) {
-    dataVersion = parseFloat(metadata.multiscales[0].version);
-    console.log(`Found version in multiscales[0]: ${dataVersion}`);
-  } else {
-    console.log('No version found in metadata');
-  }
-
-  if (dataVersion !== null) {
-    console.log(`Data version: ${dataVersion}`);
-    console.log(`Viewer supports versions:`, viewer.capabilities.ome_zarr_versions);
-
-    if (!viewer.capabilities.ome_zarr_versions || viewer.capabilities.ome_zarr_versions.length === 0) {
-      console.log('ERROR: Viewer does not specify OME-Zarr version support');
-      errors.push({
-        capability: 'ome_zarr_versions',
-        message: `Viewer does not specify OME-Zarr version support (data is v${dataVersion})`,
-        required: dataVersion,
-        found: []
-      });
-    } else if (!viewer.capabilities.ome_zarr_versions.includes(dataVersion)) {
-      console.log(`ERROR: Viewer does not support v${dataVersion}`);
-      errors.push({
-        capability: 'ome_zarr_versions',
-        message: `Viewer does not support OME-Zarr v${dataVersion} (supports: ${viewer.capabilities.ome_zarr_versions.join(', ')})`,
-        required: dataVersion,
-        found: viewer.capabilities.ome_zarr_versions
-      });
-    } else {
-      console.log(`OK: Viewer supports v${dataVersion}`);
-    }
-  }
-
-  // Check compression codecs
-  if (metadata.compressor) {
-    const codec = metadata.compressor.id || metadata.compressor;
-    if (viewer.capabilities.compression_codecs &&
-        !viewer.capabilities.compression_codecs.includes(codec)) {
-      errors.push({
-        capability: 'compression_codecs',
-        message: `Viewer does not support compression codec: ${codec}`,
-        required: codec,
-        found: viewer.capabilities.compression_codecs
-      });
-    }
-  }
-
-  // Check axes support
-  if (metadata.axes && !viewer.capabilities.axes) {
-    warnings.push({
-      capability: 'axes',
-      message: 'Dataset has axis metadata but viewer may not respect it'
-    });
-  }
-
-  // Check for multiple channels
-  const hasChannels = metadata.axes?.some(ax => ax.name === 'c' || ax.type === 'channel');
-  if (hasChannels && !viewer.capabilities.channels) {
-    errors.push({
-      capability: 'channels',
-      message: 'Dataset has multiple channels but viewer does not support them',
-      required: true,
-      found: false
-    });
-  }
-
-  // Check for timepoints
-  const hasTime = metadata.axes?.some(ax => ax.name === 't' || ax.type === 'time');
-  if (hasTime && !viewer.capabilities.timepoints) {
-    errors.push({
-      capability: 'timepoints',
-      message: 'Dataset has multiple timepoints but viewer does not support them',
-      required: true,
-      found: false
-    });
-  }
-
-  // Check for labels
-  if (metadata.labels && metadata.labels.length > 0 && !viewer.capabilities.labels) {
-    errors.push({
-      capability: 'labels',
-      message: 'Dataset has labels but viewer does not support them',
-      required: true,
-      found: false
-    });
-  }
-
-  // Check for HCS plates
-  if (metadata.plate && !viewer.capabilities.hcs_plates) {
-    errors.push({
-      capability: 'hcs_plates',
-      message: 'Dataset is an HCS plate but viewer does not support plates',
-      required: true,
-      found: false
-    });
-  }
-
-  // Check OMERO metadata
-  if (metadata.omero && !viewer.capabilities.omero_metadata) {
-    warnings.push({
-      capability: 'omero_metadata',
-      message: 'Dataset has OMERO metadata but viewer may not use it'
-    });
-  }
-
-  const result = {
-    compatible: errors.length === 0,
-    errors,
-    warnings
-  };
-
-  console.log(`Validation result for ${viewer.viewer.name}:`, result);
-  console.log(`  Compatible: ${result.compatible}`);
-  console.log(`  Errors: ${result.errors.length}`);
-  console.log(`  Warnings: ${result.warnings.length}`);
-  console.log('='.repeat(80));
-
-  return result;
 }
 
 // ============================================================================
@@ -489,7 +351,10 @@ async function main(): Promise<void> {
     const loadingEl = document.getElementById('loading')!;
     const errorEl = document.getElementById('error')!;
 
-    // Load schema and viewers
+    // Initialize library (loads viewer manifests)
+    await initializeViewerManifests();
+
+    // Load schema and viewers separately for table display
     const [schema, viewers] = await Promise.all([
       loadSchema(),
       loadViewers(VIEWER_FILES)
@@ -529,7 +394,7 @@ async function main(): Promise<void> {
     document.getElementById('capabilities-table')!.style.display = 'table';
 
   } catch (error: any) {
-    console.error('Failed to initialize:', error);
+    console.error('Failed to initializeViewerManifests:', error);
     document.getElementById('loading')!.style.display = 'none';
     const errorEl = document.getElementById('error')!;
     errorEl.textContent = `Error: ${error.message}`;
