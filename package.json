@@ -22,13 +22,20 @@
     "build": "tsc && vite build",
     "build:lib": "tsc --project tsconfig.lib.json",
     "preview": "vite preview",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/BioImageTools/capability-manifest.git"
   },
-  "keywords": ["ome-zarr", "ome-ngff", "viewer", "compatibility"],
+  "keywords": [
+    "ome-zarr",
+    "ome-ngff",
+    "viewer",
+    "compatibility"
+  ],
   "author": "",
   "license": "ISC",
   "bugs": {
@@ -44,6 +51,7 @@
     "ome-zarr.js": "^0.0.17",
     "typescript": "^5.9.3",
     "vite": "^7.2.2",
+    "vitest": "^4.0.18",
     "zarrita": "^0.5.4"
   }
 }
