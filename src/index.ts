@@ -4,10 +4,10 @@
  * Main entry point for determining OME-Zarr viewer compatibility.
  *
  * Usage:
- *   import { initialize, getCompatibleViewers } from '@bioimagetools/capability-manifest';
+ *   import { initializeViewerManifests, getCompatibleViewers } from '@bioimagetools/capability-manifest';
  *
  *   // At application startup
- *   await initialize();
+ *   await initializeViewerManifests();
  *
  *   // For each dataset
  *   const viewers = getCompatibleViewers(metadata);
@@ -26,7 +26,7 @@ let cachedManifests: ViewerManifest[] | null = null;
  *
  * @throws Error if manifest loading fails completely
  */
-export async function initialize(): Promise<void> {
+export async function initializeViewerManifests(): Promise<void> {
   cachedManifests = await loadViewerManifests();
 
   if (cachedManifests.length === 0) {
@@ -46,7 +46,7 @@ export async function initialize(): Promise<void> {
 export function getCompatibleViewers(metadata: OmeZarrMetadata): string[] {
   if (!cachedManifests) {
     throw new Error(
-      '[capability-manifest] Library not initialized. Call initialize() before using getCompatibleViewers().'
+      '[capability-manifest] Library not initialized. Call initializeViewerManifests() before using getCompatibleViewers().'
     );
   }
 
@@ -68,7 +68,7 @@ export function getCompatibleViewersWithDetails(
 ): Array<{ name: string; validation: ValidationResult }> {
   if (!cachedManifests) {
     throw new Error(
-      '[capability-manifest] Library not initialized. Call initialize() before using getCompatibleViewersWithDetails().'
+      '[capability-manifest] Library not initialized. Call initializeViewerManifests() before using getCompatibleViewersWithDetails().'
     );
   }
 

@@ -4,15 +4,13 @@
 import yaml from 'js-yaml';
 import * as omezarr from 'ome-zarr.js';
 import { FetchStore } from 'zarrita';
-import { initialize } from './index.js';
+import { initializeViewerManifests } from './index.js';
 import { validateViewer } from './validator.js';
 import type {
   Schema,
   ViewerManifest,
   OmeZarrMetadata,
-  ValidationResult,
-  ValidationError,
-  ValidationWarning
+  ValidationResult
 } from './types';
 import './style.css';
 
@@ -354,7 +352,7 @@ async function main(): Promise<void> {
     const errorEl = document.getElementById('error')!;
 
     // Initialize library (loads viewer manifests)
-    await initialize();
+    await initializeViewerManifests();
 
     // Load schema and viewers separately for table display
     const [schema, viewers] = await Promise.all([
@@ -396,7 +394,7 @@ async function main(): Promise<void> {
     document.getElementById('capabilities-table')!.style.display = 'table';
 
   } catch (error: any) {
-    console.error('Failed to initialize:', error);
+    console.error('Failed to initializeViewerManifests:', error);
     document.getElementById('loading')!.style.display = 'none';
     const errorEl = document.getElementById('error')!;
     errorEl.textContent = `Error: ${error.message}`;
