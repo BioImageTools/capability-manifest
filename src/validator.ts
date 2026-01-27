@@ -34,34 +34,42 @@ export function validateViewer(
     dataVersion = parseFloat(metadata.multiscales[0].version);
   }
 
-  if (dataVersion !== null) {
-    if (
-      !viewer.capabilities.ome_zarr_versions ||
-      viewer.capabilities.ome_zarr_versions.length === 0
-    ) {
-      errors.push({
-        capability: 'ome_zarr_versions',
-        message: `Viewer does not specify OME-Zarr version support (data is v${dataVersion})`,
-        required: dataVersion,
-        found: []
-      });
-    } else if (!viewer.capabilities.ome_zarr_versions.includes(dataVersion)) {
-      errors.push({
-        capability: 'ome_zarr_versions',
-        message: `Viewer does not support OME-Zarr v${dataVersion} (supports: ${viewer.capabilities.ome_zarr_versions.join(', ')})`,
-        required: dataVersion,
-        found: viewer.capabilities.ome_zarr_versions
-      });
-    }
+  if (dataVersion === null) {
+    errors.push({
+      capability: 'ome_zarr_versions',
+      message: 'Metadata does not specify an OME-Zarr version',
+      required: 'version',
+      found: null
+    });
+  } else if (
+    !viewer.capabilities.ome_zarr_versions ||
+    viewer.capabilities.ome_zarr_versions.length === 0
+  ) {
+    errors.push({
+      capability: 'ome_zarr_versions',
+      message: `Viewer does not specify OME-Zarr version support (data is v${dataVersion})`,
+      required: dataVersion,
+      found: []
+    });
+  } else if (!viewer.capabilities.ome_zarr_versions.includes(dataVersion)) {
+    errors.push({
+      capability: 'ome_zarr_versions',
+      message: `Viewer does not support OME-Zarr v${dataVersion} (supports: ${viewer.capabilities.ome_zarr_versions.join(', ')})`,
+      required: dataVersion,
+      found: viewer.capabilities.ome_zarr_versions
+    });
   }
 
   // Check compression codecs
   if (metadata.compressor) {
     const codec = metadata.compressor.id || metadata.compressor;
-    if (
-      viewer.capabilities.compression_codecs &&
-      !viewer.capabilities.compression_codecs.includes(codec)
-    ) {
+    if (!viewer.capabilities.compression_codecs) {
+      // Viewer doesn't declare codec support - can't guarantee compatibility
+      warnings.push({
+        capability: 'compression_codecs',
+        message: `Data uses codec '${codec}' but viewer doesn't declare codec support - compatibility unknown`
+      });
+    } else if (!viewer.capabilities.compression_codecs.includes(codec)) {
       errors.push({
         capability: 'compression_codecs',
         message: `Viewer does not support compression codec: ${codec}`,
