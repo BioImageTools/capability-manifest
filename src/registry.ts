@@ -12,7 +12,8 @@
  * }
  */
 
-const MANIFEST_BASE_URL = '/viewers/';
+const MANIFEST_BASE_URL =
+  "https://raw.githubusercontent.com/BioImageTools/capability-manifest/main/public/viewers/";
 
 export const VIEWER_REGISTRY = [
   { name: 'vizarr', manifestUrl: `${MANIFEST_BASE_URL}vizarr.yaml` },
