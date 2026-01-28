@@ -24,9 +24,10 @@ let cachedManifests: ViewerManifest[] | null = null;
  * Initialize the library by loading all viewer manifests.
  * Must be called once at application startup before using getCompatibleViewers.
  *
+ * @returns Array of all loaded viewer manifests
  * @throws Error if manifest loading fails completely
  */
-export async function initializeViewerManifests(): Promise<void> {
+export async function initializeViewerManifests(): Promise<ViewerManifest[]> {
   cachedManifests = await loadViewerManifests();
 
   if (cachedManifests.length === 0) {
@@ -34,6 +35,8 @@ export async function initializeViewerManifests(): Promise<void> {
       '[capability-manifest] Failed to load any viewer manifests. Check network and manifest URLs.'
     );
   }
+
+  return cachedManifests;
 }
 
 /**

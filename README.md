@@ -22,13 +22,14 @@ npm install @bioimagetools/capability-manifest
 
 ```typescript
 import {
-  initialize,
+  initializeViewerManifests,
   getCompatibleViewers,
-  type OmeZarrMetadata
+  type OmeZarrMetadata,
+  type ViewerManifest
 } from '@bioimagetools/capability-manifest';
 
-// Initialize once at application startup
-await initialize();
+// Initialize once at application startup - returns all viewer manifests
+const manifests = await initializeViewerManifests();
 
 // For each dataset, pass pre-parsed metadata
 const metadata: OmeZarrMetadata = {
@@ -48,11 +49,12 @@ const viewers = getCompatibleViewers(metadata);
 
 ### API
 
-#### `initialize(): Promise<void>`
+#### `initializeViewerManifests(): Promise<ViewerManifest[]>`
 
 Loads all viewer capability manifests. Must be called once at application startup before using other functions.
 
-Throws an error if no manifests can be loaded.
+- **Returns:** Array of all loaded viewer manifests, each containing viewer info (name, version, template_url) and capabilities
+- **Throws:** Error if no manifests can be loaded
 
 #### `getCompatibleViewers(metadata: OmeZarrMetadata): string[]`
 
