@@ -1,59 +1,33 @@
 /**
  * Capability Manifest Library
  *
- * Main entry point for determining OME-Zarr viewer compatibility.
+ * Determines OME-Zarr viewer compatibility based on capability manifests.
  *
  * Usage:
- *   import { initializeViewerManifests, getCompatibleViewers } from '@bioimagetools/capability-manifest';
+ *   import { loadManifestsFromUrls, getCompatibleViewers } from '@bioimagetools/capability-manifest';
  *
- *   // At application startup
- *   await initializeViewerManifests();
+ *   // Load manifests from URLs
+ *   const manifests = await loadManifestsFromUrls([...urls]);
  *
  *   // For each dataset
- *   const viewers = getCompatibleViewers(metadata);
+ *   const viewers = getCompatibleViewers([...manifests.values()], metadata);
  */
 
-import { loadViewerManifests } from './loader.js';
 import { validateViewer, isCompatible } from './validator.js';
 import type { ViewerManifest, OmeZarrMetadata, ValidationResult } from './types.js';
-
-// Cache loaded manifests after initialization
-let cachedManifests: ViewerManifest[] | null = null;
-
-/**
- * Initialize the library by loading all viewer manifests.
- * Must be called once at application startup before using getCompatibleViewers.
- *
- * @returns Array of all loaded viewer manifests
- * @throws Error if manifest loading fails completely
- */
-export async function initializeViewerManifests(): Promise<ViewerManifest[]> {
-  cachedManifests = await loadViewerManifests();
-
-  if (cachedManifests.length === 0) {
-    throw new Error(
-      '[capability-manifest] Failed to load any viewer manifests. Check network and manifest URLs.'
-    );
-  }
-
-  return cachedManifests;
-}
 
 /**
  * Get list of viewer names compatible with the given OME-Zarr metadata.
  *
+ * @param manifests - Array of viewer manifests to check against
  * @param metadata - Pre-parsed OME-Zarr metadata (from ome-zarr.js or similar)
  * @returns Array of viewer names (e.g., ['Avivator', 'Neuroglancer'])
- * @throws Error if library not initialized
  */
-export function getCompatibleViewers(metadata: OmeZarrMetadata): string[] {
-  if (!cachedManifests) {
-    throw new Error(
-      '[capability-manifest] Library not initialized. Call initializeViewerManifests() before using getCompatibleViewers().'
-    );
-  }
-
-  return cachedManifests
+export function getCompatibleViewers(
+  manifests: ViewerManifest[],
+  metadata: OmeZarrMetadata
+): string[] {
+  return manifests
     .filter(viewer => isCompatible(viewer, metadata))
     .map(viewer => viewer.viewer.name);
 }
@@ -62,26 +36,27 @@ export function getCompatibleViewers(metadata: OmeZarrMetadata): string[] {
  * Get detailed compatibility information including validation errors and warnings.
  * Useful for debugging or displaying why certain viewers are incompatible.
  *
+ * @param manifests - Array of viewer manifests to check against
  * @param metadata - Pre-parsed OME-Zarr metadata
  * @returns Array of objects with viewer name and full validation results
- * @throws Error if library not initialized
  */
 export function getCompatibleViewersWithDetails(
+  manifests: ViewerManifest[],
   metadata: OmeZarrMetadata
 ): Array<{ name: string; validation: ValidationResult }> {
-  if (!cachedManifests) {
-    throw new Error(
-      '[capability-manifest] Library not initialized. Call initializeViewerManifests() before using getCompatibleViewersWithDetails().'
-    );
-  }
-
-  return cachedManifests
+  return manifests
     .filter(viewer => isCompatible(viewer, metadata))
     .map(viewer => ({
       name: viewer.viewer.name,
       validation: validateViewer(viewer, metadata)
     }));
 }
+
+// Re-export loader
+export { loadManifestsFromUrls } from './loader.js';
+
+// Re-export validator functions
+export { validateViewer, isCompatible } from './validator.js';
 
 // Re-export types for consumers
 export type {
