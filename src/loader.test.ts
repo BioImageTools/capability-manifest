@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { loadViewerManifests } from './loader.js';
+import { loadManifestsFromUrls } from './loader.js';
 
 // Mock fetch globally
 const mockFetch = vi.fn();
@@ -31,7 +31,7 @@ capabilities:
   channels: false
 `;
 
-describe('loadViewerManifests', () => {
+describe('loadManifestsFromUrls', () => {
   beforeEach(() => {
     mockFetch.mockReset();
     vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -41,16 +41,35 @@ describe('loadViewerManifests', () => {
     vi.restoreAllMocks();
   });
 
-  it('loads and parses YAML manifests from registry URLs', async () => {
+  it('loads and parses manifests from provided URLs', async () => {
     mockFetch.mockResolvedValue({
       ok: true,
       text: () => Promise.resolve(sampleManifestYaml)
     });
 
-    const manifests = await loadViewerManifests();
+    const urls = ['https://example.com/viewer1.yaml', 'https://example.com/viewer2.yaml'];
+    const result = await loadManifestsFromUrls(urls);
 
-    expect(manifests.length).toBeGreaterThan(0);
-    expect(mockFetch).toHaveBeenCalled();
+    expect(result).toBeInstanceOf(Map);
+    expect(result.size).toBe(2);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(mockFetch).toHaveBeenCalledWith('https://example.com/viewer1.yaml');
+    expect(mockFetch).toHaveBeenCalledWith('https://example.com/viewer2.yaml');
+  });
+
+  it('returns Map keyed by URL', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      text: () => Promise.resolve(sampleManifestYaml)
+    });
+
+    const url = 'https://example.com/viewer.yaml';
+    const result = await loadManifestsFromUrls([url]);
+
+    expect(result.has(url)).toBe(true);
+    const manifest = result.get(url)!;
+    expect(manifest.viewer.name).toBe('TestViewer');
+    expect(manifest.viewer.version).toBe('1.0.0');
   });
 
   it('returns parsed ViewerManifest objects with correct structure', async () => {
@@ -59,20 +78,25 @@ describe('loadViewerManifests', () => {
       text: () => Promise.resolve(sampleManifestYaml)
     });
 
-    const manifests = await loadViewerManifests();
+    const result = await loadManifestsFromUrls(['https://example.com/viewer.yaml']);
+    const manifest = result.values().next().value!;
 
-    expect(manifests[0]).toHaveProperty('viewer');
-    expect(manifests[0]).toHaveProperty('capabilities');
-    expect(manifests[0].viewer).toHaveProperty('name');
-    expect(manifests[0].viewer).toHaveProperty('version');
+    expect(manifest).toHaveProperty('viewer');
+    expect(manifest).toHaveProperty('capabilities');
+    expect(manifest.viewer).toHaveProperty('name');
+    expect(manifest.viewer).toHaveProperty('version');
+    expect(manifest.capabilities.ome_zarr_versions).toEqual([0.4, 0.5]);
+    expect(manifest.capabilities.compression_codecs).toEqual(['blosc', 'gzip']);
+    expect(manifest.capabilities.channels).toBe(true);
+    expect(manifest.capabilities.timepoints).toBe(true);
   });
 
-  it('returns empty array and logs warning when all fetches fail', async () => {
+  it('returns empty Map and logs warning when all fetches fail', async () => {
     mockFetch.mockRejectedValue(new Error('Network error'));
 
-    const manifests = await loadViewerManifests();
+    const result = await loadManifestsFromUrls(['https://example.com/a.yaml', 'https://example.com/b.yaml']);
 
-    expect(manifests).toEqual([]);
+    expect(result.size).toBe(0);
     expect(console.warn).toHaveBeenCalled();
   });
 
@@ -89,10 +113,12 @@ describe('loadViewerManifests', () => {
       return Promise.reject(new Error('Network error'));
     });
 
-    const manifests = await loadViewerManifests();
+    const urls = ['https://example.com/good.yaml', 'https://example.com/bad.yaml'];
+    const result = await loadManifestsFromUrls(urls);
 
-    expect(manifests.length).toBe(1);
-    expect(manifests[0].viewer.name).toBe('TestViewer');
+    expect(result.size).toBe(1);
+    expect(result.has('https://example.com/good.yaml')).toBe(true);
+    expect(result.get('https://example.com/good.yaml')!.viewer.name).toBe('TestViewer');
     expect(console.warn).toHaveBeenCalled();
   });
 
@@ -103,22 +129,10 @@ describe('loadViewerManifests', () => {
       statusText: 'Not Found'
     });
 
-    const manifests = await loadViewerManifests();
+    const result = await loadManifestsFromUrls(['https://example.com/missing.yaml']);
 
-    expect(manifests).toEqual([]);
+    expect(result.size).toBe(0);
     expect(console.warn).toHaveBeenCalled();
-  });
-
-  it('fetches from all registry URLs', async () => {
-    mockFetch.mockResolvedValue({
-      ok: true,
-      text: () => Promise.resolve(sampleManifestYaml)
-    });
-
-    await loadViewerManifests();
-
-    // Registry has 3 viewers: vizarr, neuroglancer, n5-ij
-    expect(mockFetch).toHaveBeenCalledTimes(3);
   });
 
   it('handles mixed success and failure responses', async () => {
@@ -144,23 +158,119 @@ describe('loadViewerManifests', () => {
       }
     });
 
-    const manifests = await loadViewerManifests();
+    const urls = [
+      'https://example.com/a.yaml',
+      'https://example.com/b.yaml',
+      'https://example.com/c.yaml'
+    ];
+    const result = await loadManifestsFromUrls(urls);
 
-    expect(manifests.length).toBe(2);
+    expect(result.size).toBe(2);
+    expect(result.get('https://example.com/a.yaml')!.viewer.name).toBe('TestViewer');
+    expect(result.get('https://example.com/c.yaml')!.viewer.name).toBe('AnotherViewer');
     expect(console.warn).toHaveBeenCalled();
   });
 
-  it('parses capability values correctly from YAML', async () => {
+  it('returns empty Map for empty URL array', async () => {
+    const result = await loadManifestsFromUrls([]);
+
+    expect(result.size).toBe(0);
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('rejects manifests missing viewer.name', async () => {
+    const invalidYaml = `
+viewer:
+  version: 1.0.0
+capabilities:
+  ome_zarr_versions: [0.4]
+`;
     mockFetch.mockResolvedValue({
       ok: true,
-      text: () => Promise.resolve(sampleManifestYaml)
+      text: () => Promise.resolve(invalidYaml)
     });
 
-    const manifests = await loadViewerManifests();
+    const result = await loadManifestsFromUrls(['https://example.com/invalid.yaml']);
 
-    expect(manifests[0].capabilities.ome_zarr_versions).toEqual([0.4, 0.5]);
-    expect(manifests[0].capabilities.compression_codecs).toEqual(['blosc', 'gzip']);
-    expect(manifests[0].capabilities.channels).toBe(true);
-    expect(manifests[0].capabilities.timepoints).toBe(true);
+    expect(result.size).toBe(0);
+    expect(console.warn).toHaveBeenCalled();
+  });
+
+  it('rejects manifests missing viewer.version', async () => {
+    const invalidYaml = `
+viewer:
+  name: TestViewer
+capabilities:
+  ome_zarr_versions: [0.4]
+`;
+    mockFetch.mockResolvedValue({
+      ok: true,
+      text: () => Promise.resolve(invalidYaml)
+    });
+
+    const result = await loadManifestsFromUrls(['https://example.com/invalid.yaml']);
+
+    expect(result.size).toBe(0);
+    expect(console.warn).toHaveBeenCalled();
+  });
+
+  it('rejects manifests missing capabilities', async () => {
+    const invalidYaml = `
+viewer:
+  name: TestViewer
+  version: 1.0.0
+`;
+    mockFetch.mockResolvedValue({
+      ok: true,
+      text: () => Promise.resolve(invalidYaml)
+    });
+
+    const result = await loadManifestsFromUrls(['https://example.com/invalid.yaml']);
+
+    expect(result.size).toBe(0);
+    expect(console.warn).toHaveBeenCalled();
+  });
+
+  it('rejects manifests with non-object capabilities', async () => {
+    const invalidYaml = `
+viewer:
+  name: TestViewer
+  version: 1.0.0
+capabilities: "not an object"
+`;
+    mockFetch.mockResolvedValue({
+      ok: true,
+      text: () => Promise.resolve(invalidYaml)
+    });
+
+    const result = await loadManifestsFromUrls(['https://example.com/invalid.yaml']);
+
+    expect(result.size).toBe(0);
+    expect(console.warn).toHaveBeenCalled();
+  });
+
+  it('accepts valid manifests alongside invalid ones', async () => {
+    const invalidYaml = `
+viewer:
+  version: 1.0.0
+capabilities:
+  ome_zarr_versions: [0.4]
+`;
+    let callCount = 0;
+    mockFetch.mockImplementation(() => {
+      callCount++;
+      const thisCall = callCount;
+      return Promise.resolve({
+        ok: true,
+        text: () => Promise.resolve(thisCall === 1 ? sampleManifestYaml : invalidYaml)
+      });
+    });
+
+    const urls = ['https://example.com/valid.yaml', 'https://example.com/invalid.yaml'];
+    const result = await loadManifestsFromUrls(urls);
+
+    expect(result.size).toBe(1);
+    expect(result.has('https://example.com/valid.yaml')).toBe(true);
+    expect(console.warn).toHaveBeenCalled();
   });
 });
