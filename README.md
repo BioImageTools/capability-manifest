@@ -10,7 +10,7 @@ Each tool could optionally publish a "capability manifest" which describes the t
 
 ## Library Usage
 
-This package can be used as a library to determine which OME-Zarr viewers are compatible with a given dataset.
+This package can be used as a library to determine which OME-Zarr viewers are compatible with a given dataset. The caller provides manifest URLs; the library fetches, parses, and validates them.
 
 ### Installation
 
@@ -22,16 +22,19 @@ npm install @bioimagetools/capability-manifest
 
 ```typescript
 import {
-  initializeViewerManifests,
+  loadManifestsFromUrls,
   getCompatibleViewers,
-  type OmeZarrMetadata,
-  type ViewerManifest
+  type OmeZarrMetadata
 } from '@bioimagetools/capability-manifest';
 
-// Initialize once at application startup - returns all viewer manifests
-const manifests = await initializeViewerManifests();
+// Load manifests from URLs you control
+const manifestMap = await loadManifestsFromUrls([
+  'https://example.com/viewers/neuroglancer.yaml',
+  'https://example.com/viewers/avivator.yaml'
+]);
+const manifests = [...manifestMap.values()];
 
-// For each dataset, pass pre-parsed metadata
+// For each dataset, pass manifests and pre-parsed metadata
 const metadata: OmeZarrMetadata = {
   version: '0.4',
   axes: [
@@ -43,44 +46,51 @@ const metadata: OmeZarrMetadata = {
 };
 
 // Get list of compatible viewer names
-const viewers = getCompatibleViewers(metadata);
+const viewers = getCompatibleViewers(manifests, metadata);
 // Returns: ['Avivator', 'Neuroglancer']
 ```
 
 ### API
 
-#### `initializeViewerManifests(): Promise<ViewerManifest[]>`
+#### `loadManifestsFromUrls(manifestUrls: string[]): Promise<Map<string, ViewerManifest>>`
 
-Loads all viewer capability manifests. Must be called once at application startup before using other functions.
+Fetches and parses capability manifest YAML files from the provided URLs.
 
-- **Returns:** Array of all loaded viewer manifests, each containing viewer info (name, version, template_url) and capabilities
-- **Throws:** Error if no manifests can be loaded
+- **Parameters:**
+  - `manifestUrls`: Array of URLs pointing to capability manifest YAML files
+- **Returns:** Map keyed by URL to the successfully loaded ViewerManifest
+- **Behavior:** Uses `Promise.allSettled` for graceful partial failure. Logs warnings for failed URLs but does not throw. Validates that each manifest has `viewer.name` (string), `viewer.version` (string), and `capabilities` (object).
 
-#### `getCompatibleViewers(metadata: OmeZarrMetadata): string[]`
+#### `getCompatibleViewers(manifests: ViewerManifest[], metadata: OmeZarrMetadata): string[]`
 
 Returns array of viewer names that are compatible with the given dataset metadata.
 
 - **Parameters:**
+  - `manifests`: Array of viewer manifests to check against
   - `metadata`: Pre-parsed OME-Zarr metadata object (use ome-zarr.js or similar to parse from Zarr stores)
-
 - **Returns:** Array of viewer names (e.g., `['Avivator', 'Neuroglancer']`)
 
-- **Throws:** Error if library not initialized
+#### `getCompatibleViewersWithDetails(manifests: ViewerManifest[], metadata: OmeZarrMetadata): Array<{name: string, validation: ValidationResult}>`
 
-#### `getCompatibleViewersWithDetails(metadata: OmeZarrMetadata): Array<{name: string, validation: ValidationResult}>`
+Returns detailed compatibility information including validation errors and warnings for each compatible viewer. Useful for debugging or displaying why certain viewers work/don't work.
 
-Returns detailed compatibility information including validation errors and warnings for each compatible viewer.
+#### `isCompatible(viewer: ViewerManifest, metadata: OmeZarrMetadata): boolean`
 
-Useful for debugging or displaying why certain viewers work/don't work.
+Returns whether a single viewer is compatible with the given metadata.
+
+#### `validateViewer(viewer: ViewerManifest, metadata: OmeZarrMetadata): ValidationResult`
+
+Returns full validation details (compatible flag, errors, warnings) for a single viewer against the given metadata.
 
 ### Types
 
 The library exports TypeScript types for all data structures:
 
-- `OmeZarrMetadata` - Structure of OME-Zarr metadata
 - `ViewerManifest` - Structure of viewer capability manifests
+- `OmeZarrMetadata` - Structure of OME-Zarr metadata
 - `ValidationResult` - Validation outcome with errors/warnings
 - `ValidationError`, `ValidationWarning` - Detailed validation messages
+- `AxisMetadata`, `MultiscaleMetadata` - Nested metadata types
 
 ## Manifest Specification (DRAFT)
 
