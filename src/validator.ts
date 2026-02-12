@@ -63,7 +63,10 @@ export function validateViewer(
   // Check compression codecs
   if (metadata.compressor) {
     const codec = metadata.compressor.id || metadata.compressor;
-    if (!viewer.capabilities.compression_codecs) {
+    if (
+      !viewer.capabilities.compression_codecs ||
+      viewer.capabilities.compression_codecs.length === 0
+    ) {
       // Viewer doesn't declare codec support - can't guarantee compatibility
       warnings.push({
         capability: 'compression_codecs',

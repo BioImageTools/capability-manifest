@@ -164,6 +164,19 @@ describe('validateViewer', () => {
       expect(result.warnings[0].message).toContain('zstd');
       expect(result.warnings[0].message).toContain('compatibility unknown');
     });
+
+    it('returns warning when viewer has empty codec list but data uses compression', () => {
+      const viewer = createViewer({ compression_codecs: [] });
+      const metadata = createMetadata({ compressor: { id: 'blosc' } });
+
+      const result = validateViewer(viewer, metadata);
+
+      expect(result.compatible).toBe(true);
+      expect(result.warnings).toHaveLength(1);
+      expect(result.warnings[0].capability).toBe('compression_codecs');
+      expect(result.warnings[0].message).toContain('blosc');
+      expect(result.warnings[0].message).toContain('compatibility unknown');
+    });
   });
 
   describe('axes support', () => {
