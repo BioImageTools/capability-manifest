@@ -119,9 +119,13 @@ npm test
 rm -rf dist && npm run build:lib
 
 # 3. Bump the version in package.json (patch, minor, or major)
+# Using this command automatically makes a commit with the
+# updated package.json and package-lock.json
 npm version patch   # e.g. 0.3.1 -> 0.3.2
 
-# 4. Publish to npm (uses "publishConfig": {"access": "public"} from package.json)
+# 4. Login to npm (if not already) and publish
+# (uses "publishConfig": {"access": "public"} from package.json)
+npm login
 npm publish
 
 # 5. Push the version commit
