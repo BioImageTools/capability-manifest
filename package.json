@@ -1,6 +1,6 @@
 {
   "name": "@bioimagetools/capability-manifest",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Library to determine OME-Zarr viewer compatibility based on capability manifests",
   "type": "module",
   "main": "./dist/index.js",
