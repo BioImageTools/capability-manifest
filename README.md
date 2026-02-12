@@ -105,7 +105,28 @@ The library exports TypeScript types for all data structures:
 
 ## Prototype
 
-There is a [prototype](https://bioimagetools.github.io/capability-manifest/?url=https://uk1s3.embassy.ebi.ac.uk/idr/zarr/v0.5/idr0066/ExpD_chicken_embryo_MIP.ome.zarr) in this repo which implements a basic compatibility matrix by fetching the individual viewer manifests. 
+There is a [prototype](https://bioimagetools.github.io/capability-manifest/?url=https://uk1s3.embassy.ebi.ac.uk/idr/zarr/v0.5/idr0066/ExpD_chicken_embryo_MIP.ome.zarr) in this repo which implements a basic compatibility matrix by fetching the individual viewer manifests.
+
+## Releasing to npm
+
+To publish a new version to npm manually:
+
+```bash
+# 1. Run tests
+npm test
+
+# 2. Clean and build the library (compiles TypeScript to dist/)
+rm -rf dist && npm run build:lib
+
+# 3. Bump the version in package.json (patch, minor, or major)
+npm version patch   # e.g. 0.3.1 -> 0.3.2
+
+# 4. Publish to npm (uses "publishConfig": {"access": "public"} from package.json)
+npm publish
+
+# 5. Push the version commit
+git push
+```
 
 ## Other links
 * [OME-NGFF specifications](https://ngff.openmicroscopy.org)
