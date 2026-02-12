@@ -297,7 +297,7 @@ describe('validateViewer', () => {
   });
 
   describe('labels support', () => {
-    it('returns error when data has labels but viewer does not support them', () => {
+    it('returns warning when data has labels but viewer does not support them', () => {
       const viewer = createViewer({ labels: false });
       const metadata = createMetadata({
         labels: ['nuclei', 'cells']
@@ -305,9 +305,10 @@ describe('validateViewer', () => {
 
       const result = validateViewer(viewer, metadata);
 
-      expect(result.compatible).toBe(false);
-      expect(result.errors).toHaveLength(1);
-      expect(result.errors[0].capability).toBe('labels');
+      expect(result.compatible).toBe(true);
+      expect(result.warnings).toContainEqual(
+        expect.objectContaining({ capability: 'labels' })
+      );
     });
 
     it('returns compatible when viewer supports labels', () => {

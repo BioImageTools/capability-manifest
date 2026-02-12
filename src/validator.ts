@@ -113,11 +113,9 @@ export function validateViewer(
 
   // Check for labels
   if (metadata.labels && metadata.labels.length > 0 && !viewer.capabilities.labels) {
-    errors.push({
+    warnings.push({
       capability: 'labels',
-      message: 'Dataset has labels but viewer does not support them',
-      required: true,
-      found: false
+      message: 'Dataset has labels but viewer may not display them'
     });
   }
 
