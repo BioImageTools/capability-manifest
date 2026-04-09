@@ -1,14 +1,14 @@
 viewer:
-  name: "Neuroglancer"
-  version: "2.41.2"
-  repo: "https://github.com/google/neuroglancer"
-  template_url: https://neuroglancer-demo.appspot.com/#!{"layers":[{"name":"image","source":"{DATA_URL}","type":"image"}]}
+  name: "Avivator"
+  version: "0.16.1"
+  repo: "https://github.com/hms-dbmi/viv"
+  template_url: "https://avivator.gehlenborglab.org/?image_url={DATA_URL}"
 
 capabilities:
   # Enumeration of OME-Zarr versions that can be loaded
-  ome_zarr_versions: [0.4, 0.5]
+  ome_zarr_versions: [0.4]
 
-  compression_codecs: ["blosc", "zstd", "zlib", "lz4", "gzip"]
+  compression_codecs: ["blosc", "gzip"]
 
   # Which additional RFCs are supported?
   rfcs_supported: []
