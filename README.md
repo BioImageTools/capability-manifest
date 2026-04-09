@@ -92,16 +92,109 @@ The library exports TypeScript types for all data structures:
 - `ValidationError`, `ValidationWarning` - Detailed validation messages
 - `AxisMetadata`, `MultiscaleMetadata` - Nested metadata types
 
-## Manifest Specification (DRAFT)
+## Canonical Manifests
 
-| Attribute             | Description                                                                                                                                                                                                                                                                           |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ome_zarr_versions     | List of OME-NGFF versions which are supported by the tool. When a Zarr group with multiscales metadata containing a version listed here is given to the tool, the tool promises to do something useful. However, it may not support every feature of the specification.               |
-| rfcs_supported        | List of supported RFC numbers which have been implemented on top of the released OME-NGFF versions listed in ome_zarr_versions. Given test data produced for a given RFC listed here, the tool promises to do something useful. However, it may not support every feature of the RFC. |
-| bioformats2raw_layout | A tool that advertises support for this will be able to open a Zarr that implements this transitional layout.                                                                                                                                                                         |
-| omero_metadata        | A tool that advertises support for this will be able to open a Zarr that implements this transitional metadata, for example by defaulting channel colors with the provided color values.                                                                                              |
-| labels                | A tool that advertises support will open pixel-annotation metadata found in the "labels" group.                                                                                                                                                                                       |
-| hcs_plates            | A tool that advertises support will open high content screening datasets found in the "plate" group.                                                                                                                                                                                  |
+This repository hosts canonical capability manifests for well-known OME-Zarr viewers in the [`manifests/`](manifests/) directory:
+
+| Manifest | Viewer | OME-Zarr Versions |
+| --- | --- | --- |
+| [neuroglancer.yaml](manifests/neuroglancer.yaml) | Neuroglancer | 0.4, 0.5 |
+| [avivator.yaml](manifests/avivator.yaml) | Avivator (Viv) | 0.4 |
+| [validator.yaml](manifests/validator.yaml) | OME-Zarr Validator | 0.4, 0.5 |
+| [vole.yaml](manifests/vole.yaml) | Vol-E | 0.4, 0.5 |
+
+Consumers can load these manifests by URL directly from GitHub (raw content URLs) or host copies on their own infrastructure.
+
+Viewer developers are encouraged to maintain their own manifests and submit PRs to update the canonical versions here when capabilities change.
+
+## Manifest Schema (DRAFT)
+
+A capability manifest is a YAML file with two top-level sections: `viewer` and `capabilities`.
+
+### `viewer` Section
+
+Identifies the tool and provides a URL template for launching it.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `name` | string | yes | Human-readable name of the viewer |
+| `version` | string | yes | Version of the viewer these capabilities describe |
+| `repo` | string | no | URL of the source code repository |
+| `template_url` | string | no | URL template for opening a dataset. Use `{DATA_URL}` as a placeholder for the dataset URL — consumers replace it at runtime with the actual OME-Zarr location |
+
+Example:
+
+```yaml
+viewer:
+  name: "Neuroglancer"
+  version: "2.41.2"
+  repo: "https://github.com/google/neuroglancer"
+  template_url: https://neuroglancer-demo.appspot.com/#!{"layers":[{"name":"image","source":"{DATA_URL}","type":"image"}]}
+```
+
+### `capabilities` Section
+
+Describes which OME-Zarr features the tool supports. All fields are optional — omitting a field means the capability is unknown/undeclared.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `ome_zarr_versions` | number[] | OME-NGFF specification versions the tool can load (e.g. `[0.4, 0.5]`). When a dataset's multiscales metadata contains a version listed here, the tool should be able to open it. |
+| `compression_codecs` | string[] | Compression codecs the tool can decode (e.g. `["blosc", "zstd", "gzip"]`). An empty array `[]` means the tool does not declare codec support — compatibility is unknown rather than unsupported. |
+| `rfcs_supported` | number[] | RFC numbers implemented on top of the released OME-NGFF versions. Given test data for a listed RFC, the tool should handle it. |
+| `axes` | boolean | Whether axis names and units from the metadata are respected |
+| `scale` | boolean | Whether scaling factors on multiscale datasets are respected |
+| `translation` | boolean | Whether translation offsets (including subpixel offsets for lower scale levels) are respected |
+| `channels` | boolean | Whether the tool supports datasets with multiple channels (c axis) |
+| `timepoints` | boolean | Whether the tool supports datasets with multiple timepoints (t axis) |
+| `labels` | boolean | Whether pixel-annotation metadata in the "labels" group is loaded |
+| `hcs_plates` | boolean | Whether high content screening datasets in the "plate" group are loaded |
+| `bioformats2raw_layout` | boolean | Whether the tool can open Zarr stores using the bioformats2raw transitional layout |
+| `omero_metadata` | boolean | Whether the tool uses OMERO metadata (e.g. to set default channel colors) |
+
+Example:
+
+```yaml
+capabilities:
+  ome_zarr_versions: [0.4, 0.5]
+  compression_codecs: ["blosc", "zstd", "gzip"]
+  rfcs_supported: []
+  axes: true
+  scale: true
+  translation: true
+  channels: true
+  timepoints: true
+  labels: false
+  hcs_plates: false
+  bioformats2raw_layout: false
+  omero_metadata: true
+```
+
+### How `validateViewer()` Uses the Manifest
+
+The `validateViewer()` function checks a manifest's declared capabilities against a dataset's `OmeZarrMetadata` and returns a `ValidationResult`:
+
+```typescript
+interface ValidationResult {
+  compatible: boolean;    // true if no errors (viewer can open the data)
+  errors: ValidationError[];   // hard failures — data will not load
+  warnings: ValidationWarning[];  // soft issues — data loads but features may be missing
+}
+```
+
+The checks performed, in order:
+
+| Check | Metadata field | Manifest field | Result if mismatch |
+| --- | --- | --- | --- |
+| OME-Zarr version | `version` or `multiscales[0].version` | `ome_zarr_versions` | **Error** — viewer cannot load this version |
+| Compression codec | `compressor.id` | `compression_codecs` | **Error** if codec not listed; **Warning** if viewer declares no codecs (unknown support) |
+| Axes metadata | `axes` | `axes` | **Warning** — axis names/units may be ignored |
+| Channel support | `axes` contains c/channel | `channels` | **Error** — multi-channel data won't render |
+| Timepoint support | `axes` contains t/time | `timepoints` | **Error** — time-series data won't render |
+| Labels | `labels` array non-empty | `labels` | **Warning** — labels won't be displayed |
+| HCS plates | `plate` present | `hcs_plates` | **Error** — plate data won't load |
+| OMERO metadata | `omero` present | `omero_metadata` | **Warning** — channel colors etc. won't be applied |
+
+A viewer is considered **compatible** (`compatible: true`) when there are zero errors. Warnings indicate features that may be missing but don't prevent the data from loading.
 
 ## Prototype
 
