@@ -92,6 +92,18 @@ The library exports TypeScript types for all data structures:
 - `ValidationError`, `ValidationWarning` - Detailed validation messages
 - `AxisMetadata`, `MultiscaleMetadata` - Nested metadata types
 
+## Icons
+
+Icons for canonical viewers are hosted in the [`public/icons/`](public/icons/) directory and served via GitHub Pages at:
+
+```
+https://raw.githubusercontent.com/bioimagetools/capability-manifest/host-manifests-and-docs/public/icons/{slug}.png
+```
+
+where `{slug}` is the viewer name lowercased with spaces replaced by hyphens (e.g. `"OME-Zarr Validator"` → `ome-zarr-validator.png`). Consumers can derive this URL automatically and fall back to a local placeholder when the icon is unavailable.
+
+The `logo` field in the `viewer` section is an optional override for cases where this convention does not apply.
+
 ## Canonical Manifests
 
 This repository hosts canonical capability manifests for well-known OME-Zarr viewers in the [`manifests/`](manifests/) directory:
