@@ -27,6 +27,12 @@
           "description": "URL to the tool's source code repository",
           "examples": ["https://github.com/google/neuroglancer"]
         },
+        "logo": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL to a logo image for the viewer. Optional override — consumers may derive a logo URL from the viewer name by convention. Provide this field only if the conventional path does not apply.",
+          "examples": ["https://raw.githubusercontent.com/bioimagetools/capability-manifest/host-manifests-and-docs/public/icons/neuroglancer.png"]
+        },
         "template_url": {
           "type": "string",
           "format": "uri",

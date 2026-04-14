@@ -33,6 +33,7 @@ export type ViewerManifest = {
     name: string;
     version: string;
     repo?: string;
+    logo?: string;
     template_url?: string;
   };
   capabilities: {

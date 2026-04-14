@@ -120,6 +120,7 @@ Identifies the tool and provides a URL template for launching it.
 | `name` | string | yes | Human-readable name of the viewer |
 | `version` | string | yes | Version of the viewer these capabilities describe |
 | `repo` | string | no | URL of the source code repository |
+| `logo` | string | no | URL to a logo image for the viewer. Optional override — consumers may derive a logo URL by convention (see [Icons](#icons)). Omit if the conventional path applies. |
 | `template_url` | string | no | URL template for opening a dataset. Use `{DATA_URL}` as a placeholder for the dataset URL — consumers replace it at runtime with the actual OME-Zarr location |
 
 Example:
