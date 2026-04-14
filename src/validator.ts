@@ -1,10 +1,23 @@
 import type {
   ViewerManifest,
   OmeZarrMetadata,
+  MultiscaleMetadata,
   ValidationResult,
   ValidationError,
   ValidationWarning,
 } from "./types.js";
+
+function hasTransformationType(
+  multiscales: MultiscaleMetadata[],
+  type: "scale" | "translation",
+): boolean {
+  return multiscales.some(
+    (ms) =>
+      ms.datasets?.some((ds) =>
+        ds.coordinateTransformations?.some((ct) => ct.type === type),
+      ) || ms.coordinateTransformations?.some((ct) => ct.type === type),
+  );
+}
 
 /**
  * Validates whether a viewer is compatible with a given OME-Zarr dataset.
@@ -84,11 +97,42 @@ export function validateViewer(
     }
   }
 
+  // TODO: Check rfcs_supported (hard compatibility requirement)
+  // Blocker: OME-NGFF metadata does not expose which RFCs a dataset requires.
+  // After determing how to implement this check, compare metadata.rfcs_required against
+  // viewer.capabilities.rfcs_supported and push to errors[] on mismatch.
+
   // Check axes support
   if (metadata.axes && !viewer.capabilities.axes) {
     warnings.push({
       capability: "axes",
       message: "Dataset has axis metadata but viewer may not respect it",
+    });
+  }
+
+  // Check support for respecting scaling factors on multiscales
+  if (
+    metadata.multiscales &&
+    hasTransformationType(metadata.multiscales, "scale") &&
+    !viewer.capabilities.scale
+  ) {
+    warnings.push({
+      capability: "scale",
+      message:
+        "Dataset has coordinate scale transformations but viewer may not respect them",
+    });
+  }
+
+  // Check translation support
+  if (
+    metadata.multiscales &&
+    hasTransformationType(metadata.multiscales, "translation") &&
+    !viewer.capabilities.translation
+  ) {
+    warnings.push({
+      capability: "translation",
+      message:
+        "Dataset has coordinate translation offsets but viewer may not respect them",
     });
   }
 
@@ -132,6 +176,18 @@ export function validateViewer(
     warnings.push({
       capability: "hcs_plates",
       message: "Dataset is an HCS plate but viewer may not support plates",
+    });
+  }
+
+  // Check bioformats2raw layout support
+  if (
+    metadata.bioformats2raw_layout &&
+    !viewer.capabilities.bioformats2raw_layout
+  ) {
+    warnings.push({
+      capability: "bioformats2raw_layout",
+      message:
+        "Dataset uses bioformats2raw layout but viewer may not support it",
     });
   }
 

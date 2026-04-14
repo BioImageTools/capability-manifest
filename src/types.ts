@@ -58,10 +58,23 @@ export type AxisMetadata = {
   unit?: string;
 };
 
+export type CoordinateTransformation =
+  | { type: 'identity' }
+  | { type: 'scale'; scale: number[] }
+  | { type: 'scale'; path: string }
+  | { type: 'translation'; translation: number[] }
+  | { type: 'translation'; path: string };
+
+export type DatasetMetadata = {
+  path: string;
+  coordinateTransformations?: CoordinateTransformation[];
+};
+
 export type MultiscaleMetadata = {
   version?: string;
   axes?: AxisMetadata[];
-  datasets: { path: string }[];
+  datasets: DatasetMetadata[];
+  coordinateTransformations?: CoordinateTransformation[];
   [key: string]: unknown;
 };
 

@@ -430,6 +430,100 @@ describe('validateViewer', () => {
     });
   });
 
+  describe('bioformats2raw_layout support', () => {
+    it('returns warning when data uses bioformats2raw layout but viewer does not support it', () => {
+      const viewer = createViewer({ bioformats2raw_layout: false });
+      const metadata = createMetadata({ bioformats2raw_layout: true });
+      const result = validateViewer(viewer, metadata);
+      expect(result.dataCompatible).toBe(true);
+      expect(result.dataFeaturesSupported).toBe(false);
+      expect(result.warnings).toHaveLength(1);
+      expect(result.warnings[0].capability).toBe('bioformats2raw_layout');
+    });
+
+    it('returns no warning when viewer supports bioformats2raw layout', () => {
+      const viewer = createViewer({ bioformats2raw_layout: true });
+      const metadata = createMetadata({ bioformats2raw_layout: true });
+      const result = validateViewer(viewer, metadata);
+      expect(result.dataFeaturesSupported).toBe(true);
+      expect(result.warnings).toHaveLength(0);
+    });
+
+    it('skips bioformats2raw check when metadata does not use it', () => {
+      const viewer = createViewer({ bioformats2raw_layout: false });
+      const metadata = createMetadata({ bioformats2raw_layout: false });
+      const result = validateViewer(viewer, metadata);
+      expect(result.warnings).toHaveLength(0);
+    });
+  });
+
+  describe('scale support', () => {
+    const metadataWithScale = createMetadata({
+      multiscales: [{
+        version: '0.4',
+        axes: [{ name: 'y', type: 'space' }, { name: 'x', type: 'space' }],
+        datasets: [{ path: '0', coordinateTransformations: [{ type: 'scale', scale: [0.5, 0.5] }] }]
+      }]
+    });
+
+    it('returns warning when data has scale transforms and viewer does not support them', () => {
+      const viewer = createViewer({ scale: false });
+      const result = validateViewer(viewer, metadataWithScale);
+      expect(result.dataCompatible).toBe(true);
+      expect(result.dataFeaturesSupported).toBe(false);
+      expect(result.warnings[0].capability).toBe('scale');
+    });
+
+    it('no warning when viewer supports scale', () => {
+      const viewer = createViewer({ scale: true });
+      const result = validateViewer(viewer, metadataWithScale);
+      expect(result.warnings.filter(w => w.capability === 'scale')).toHaveLength(0);
+    });
+
+    it('returns warning when viewer does not declare scale (undefined)', () => {
+      const viewer = createViewer({ scale: undefined });
+      const result = validateViewer(viewer, metadataWithScale);
+      expect(result.warnings.filter(w => w.capability === 'scale')).toHaveLength(1);
+    });
+  });
+
+  describe('translation support', () => {
+    const metadataWithTranslation = createMetadata({
+      multiscales: [{
+        version: '0.4',
+        axes: [{ name: 'y', type: 'space' }, { name: 'x', type: 'space' }],
+        datasets: [{ path: '0', coordinateTransformations: [{ type: 'translation', translation: [10, 20] }] }]
+      }]
+    });
+
+    it('returns warning when data has translation transforms and viewer does not support them', () => {
+      const viewer = createViewer({ translation: false });
+      const result = validateViewer(viewer, metadataWithTranslation);
+      expect(result.dataCompatible).toBe(true);
+      expect(result.dataFeaturesSupported).toBe(false);
+      expect(result.warnings[0].capability).toBe('translation');
+    });
+
+    it('no warning when viewer supports translation', () => {
+      const viewer = createViewer({ translation: true });
+      const result = validateViewer(viewer, metadataWithTranslation);
+      expect(result.warnings.filter(w => w.capability === 'translation')).toHaveLength(0);
+    });
+
+    it('no warning when metadata has no translation transforms', () => {
+      const viewer = createViewer({ translation: false });
+      const metadataNoTranslation = createMetadata({
+        multiscales: [{
+          version: '0.4',
+          axes: [{ name: 'y', type: 'space' }, { name: 'x', type: 'space' }],
+          datasets: [{ path: '0', coordinateTransformations: [{ type: 'scale', scale: [1, 1] }] }]
+        }]
+      });
+      const result = validateViewer(viewer, metadataNoTranslation);
+      expect(result.warnings.filter(w => w.capability === 'translation')).toHaveLength(0);
+    });
+  });
+
   describe('multiple validation issues', () => {
     it('collects errors for hard requirements and warnings for soft requirements', () => {
       const viewer = createViewer({
