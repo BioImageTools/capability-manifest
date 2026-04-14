@@ -80,7 +80,7 @@ Returns whether a single viewer is compatible with the given metadata.
 
 #### `validateViewer(viewer: ViewerManifest, metadata: OmeZarrMetadata): ValidationResult`
 
-Returns full validation details (compatible flag, errors, warnings) for a single viewer against the given metadata.
+Returns full validation details (`dataCompatible`, `dataFeaturesSupported`, errors, warnings) for a single viewer against the given metadata.
 
 ### Types
 
@@ -175,26 +175,37 @@ The `validateViewer()` function checks a manifest's declared capabilities agains
 
 ```typescript
 interface ValidationResult {
-  compatible: boolean;    // true if no errors (viewer can open the data)
-  errors: ValidationError[];   // hard failures — data will not load
+  dataCompatible: boolean;        // true if no errors (viewer can open the data)
+  dataFeaturesSupported: boolean; // true if no warnings (viewer fully supports all data features)
+  errors: ValidationError[];      // hard failures — data will not load
   warnings: ValidationWarning[];  // soft issues — data loads but features may be missing
 }
 ```
 
+Capabilities fall into two levels:
+
+- **Data compatibility** (`errors`): Hard requirements. If unmet, the viewer cannot open or render the data at all — it should not be shown.
+- **Data support** (`warnings`): Soft requirements. If unmet, the viewer can still open the data but may not display certain features — it should still be shown, with warnings logged or surfaced to the user.
+
 The checks performed, in order:
 
-| Check | Metadata field | Manifest field | Result if mismatch |
-| --- | --- | --- | --- |
-| OME-Zarr version | `version` or `multiscales[0].version` | `ome_zarr_versions` | **Error** — viewer cannot load this version |
-| Compression codec | `compressor.id` | `compression_codecs` | **Error** if codec not listed; **Warning** if viewer declares no codecs (unknown support) |
-| Axes metadata | `axes` | `axes` | **Warning** — axis names/units may be ignored |
-| Channel support | `axes` contains c/channel | `channels` | **Error** — multi-channel data won't render |
-| Timepoint support | `axes` contains t/time | `timepoints` | **Error** — time-series data won't render |
-| Labels | `labels` array non-empty | `labels` | **Warning** — labels won't be displayed |
-| HCS plates | `plate` present | `hcs_plates` | **Error** — plate data won't load |
-| OMERO metadata | `omero` present | `omero_metadata` | **Warning** — channel colors etc. won't be applied |
+| Check | Metadata field | Manifest field | Level | Result if mismatch |
+| --- | --- | --- | --- | --- |
+| OME-Zarr version | `version` or `multiscales[0].version` | `ome_zarr_versions` | **Compatibility** | **Error** — viewer cannot load this version |
+| Compression codec | `compressor.id` | `compression_codecs` | **Compatibility** | **Error** if codec not listed; **Warning** if viewer declares no codecs (unknown support) |
+| Axes metadata | `axes` | `axes` | **Support** | **Warning** — axis names/units may be ignored |
+| Channel support | `axes` contains c/channel | `channels` | **Support** | **Warning** — multi-channel data may not render correctly |
+| Timepoint support | `axes` contains t/time | `timepoints` | **Support** | **Warning** — time-series data may not render correctly |
+| Labels | `labels` array non-empty | `labels` | **Support** | **Warning** — labels won't be displayed |
+| HCS plates | `plate` present | `hcs_plates` | **Support** | **Warning** — plate layout won't be shown |
+| OMERO metadata | `omero` present | `omero_metadata` | **Support** | **Warning** — channel colors etc. won't be applied |
+| Scale transforms | `multiscales[].datasets[].coordinateTransformations` type `scale` | `scale` | **Support** | **Warning** — scaling factors may be ignored |
+| Translation offsets | `multiscales[].datasets[].coordinateTransformations` type `translation` | `translation` | **Support** | **Warning** — coordinate offsets may be ignored |
+| bioformats2raw layout | `bioformats2raw_layout` | `bioformats2raw_layout` | **Support** | **Warning** — layout may not be traversed correctly |
 
-A viewer is considered **compatible** (`compatible: true`) when there are zero errors. Warnings indicate features that may be missing but don't prevent the data from loading.
+> **Note on `rfcs_supported`:** Although `rfcs_supported` is a hard compatibility requirement (it determines whether a viewer can parse RFC-mandated metadata structures), no validation check is currently implemented. OME-NGFF metadata does not yet expose which RFCs a dataset requires — this is a spec-level gap. When the spec defines a `rfcs_required` field, the validator will compare it against `viewer.capabilities.rfcs_supported` and produce an error on mismatch.
+
+A viewer is considered **data-compatible** (`dataCompatible: true`) when there are zero errors — it should be shown to the user. `dataFeaturesSupported` is `false` when there are warnings, indicating the viewer can open the data but may not display all features.
 
 ## Prototype
 
