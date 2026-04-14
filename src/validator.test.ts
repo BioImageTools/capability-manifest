@@ -133,23 +133,65 @@ describe('validateViewer', () => {
       expect(result.errors[0].required).toBe('zstd');
     });
 
-    it('handles compressor as plain string', () => {
-      const viewer = createViewer({ compression_codecs: ['blosc'] });
-      const metadata = createMetadata({ compressor: 'zstd' });
-
-      const result = validateViewer(viewer, metadata);
-
-      expect(result.dataCompatible).toBe(false);
-      expect(result.errors[0].required).toBe('zstd');
-    });
-
-    it('skips codec check when metadata has no compressor', () => {
+    it('skips codec check when metadata has no compressor or codecs', () => {
       const viewer = createViewer({ compression_codecs: ['blosc'] });
       const metadata = createMetadata({ compressor: undefined });
 
       const result = validateViewer(viewer, metadata);
 
       expect(result.dataCompatible).toBe(true);
+    });
+
+    it('returns compatible when viewer supports a Zarr v3 codec', () => {
+      const viewer = createViewer({ compression_codecs: ['blosc', 'bytes'] });
+      const metadata = createMetadata({
+        codecs: [{ name: 'bytes' }, { name: 'blosc', configuration: { cname: 'lz4' } }]
+      });
+
+      const result = validateViewer(viewer, metadata);
+
+      expect(result.dataCompatible).toBe(true);
+    });
+
+    it('returns error when viewer does not support a Zarr v3 codec', () => {
+      const viewer = createViewer({ compression_codecs: ['bytes'] });
+      const metadata = createMetadata({
+        codecs: [{ name: 'bytes' }, { name: 'zstd' }]
+      });
+
+      const result = validateViewer(viewer, metadata);
+
+      expect(result.dataCompatible).toBe(false);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].capability).toBe('compression_codecs');
+      expect(result.errors[0].required).toBe('zstd');
+    });
+
+    it('returns multiple errors when viewer does not support multiple Zarr v3 codecs', () => {
+      const viewer = createViewer({ compression_codecs: ['bytes'] });
+      const metadata = createMetadata({
+        codecs: [{ name: 'blosc' }, { name: 'bytes' }, { name: 'zstd' }]
+      });
+
+      const result = validateViewer(viewer, metadata);
+
+      expect(result.dataCompatible).toBe(false);
+      expect(result.errors).toHaveLength(2);
+      expect(result.errors.map(e => e.required)).toEqual(expect.arrayContaining(['blosc', 'zstd']));
+    });
+
+    it('returns warning when viewer declares no codecs and data uses Zarr v3 codecs', () => {
+      const viewer = createViewer({ compression_codecs: undefined });
+      const metadata = createMetadata({
+        codecs: [{ name: 'bytes' }, { name: 'blosc' }]
+      });
+
+      const result = validateViewer(viewer, metadata);
+
+      expect(result.dataCompatible).toBe(true);
+      expect(result.warnings).toHaveLength(1);
+      expect(result.warnings[0].capability).toBe('compression_codecs');
+      expect(result.warnings[0].message).toContain('compatibility unknown');
     });
 
     it('returns warning when viewer has no codec list but data uses compression', () => {

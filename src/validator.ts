@@ -75,25 +75,36 @@ export function validateViewer(
     });
   }
 
-  // Check compression codecs
-  if (metadata.compressor) {
-    const codec = metadata.compressor.id || metadata.compressor;
+  // Collect codecs from Zarr v2 (compressor.id) or Zarr v3 (codecs[].name)
+  const dataCodecs: string[] = [];
+  if (metadata.compressor?.id) {
+    dataCodecs.push(metadata.compressor.id);
+  } else if (metadata.codecs && metadata.codecs.length > 0) {
+    dataCodecs.push(...metadata.codecs.map((c) => c.name));
+  }
+
+  if (dataCodecs.length > 0) {
     if (
       !viewer.capabilities.compression_codecs ||
       viewer.capabilities.compression_codecs.length === 0
     ) {
       // Viewer doesn't declare codec support - can't guarantee compatibility
+      const codecList = dataCodecs.join("', '");
       warnings.push({
         capability: "compression_codecs",
-        message: `Data uses codec '${codec}' but viewer doesn't declare codec support - compatibility unknown`,
+        message: `Data uses codec '${codecList}' but viewer doesn't declare codec support - compatibility unknown`,
       });
-    } else if (!viewer.capabilities.compression_codecs.includes(codec)) {
-      errors.push({
-        capability: "compression_codecs",
-        message: `Viewer does not support compression codec: ${codec}`,
-        required: codec,
-        found: viewer.capabilities.compression_codecs,
-      });
+    } else {
+      for (const codec of dataCodecs) {
+        if (!viewer.capabilities.compression_codecs.includes(codec)) {
+          errors.push({
+            capability: "compression_codecs",
+            message: `Viewer does not support compression codec: ${codec}`,
+            required: codec,
+            found: viewer.capabilities.compression_codecs,
+          });
+        }
+      }
     }
   }
 

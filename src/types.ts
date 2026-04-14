@@ -87,7 +87,8 @@ export type OmeZarrMetadata = {
   labels?: string[];
   plate?: { [key: string]: unknown };
   well?: { [key: string]: unknown };
-  compressor?: unknown;
+  compressor?: { id: string; [key: string]: unknown } | null;  // Zarr v2
+  codecs?: Array<{ name: string; configuration?: { [key: string]: unknown } }>;  // Zarr v3
 };
 
 // Validation types
