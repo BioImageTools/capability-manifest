@@ -45,11 +45,8 @@ export function getCompatibleViewersWithDetails(
   metadata: OmeZarrMetadata
 ): Array<{ name: string; validation: ValidationResult }> {
   return manifests
-    .filter(viewer => isCompatible(viewer, metadata))
-    .map(viewer => ({
-      name: viewer.viewer.name,
-      validation: validateViewer(viewer, metadata)
-    }));
+    .map(viewer => ({ name: viewer.viewer.name, validation: validateViewer(viewer, metadata) }))
+    .filter(({ validation }) => validation.dataCompatible);
 }
 
 // Re-export loader

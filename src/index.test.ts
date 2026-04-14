@@ -44,9 +44,28 @@ describe('getCompatibleViewers', () => {
     expect(result).toEqual(['ViewerA', 'ViewerB']);
   });
 
-  it('filters out incompatible viewers', () => {
+  it('filters out incompatible viewers by hard requirements', () => {
     const manifests = [
-      createManifest('FullViewer', { ome_zarr_versions: [0.4, 0.5], channels: true }),
+      createManifest('FullViewer', { ome_zarr_versions: [0.4, 0.5] }),
+      createManifest('LimitedViewer', { ome_zarr_versions: [0.4] })
+    ];
+    const metadata: OmeZarrMetadata = {
+      version: '0.5',
+      axes: [
+        { name: 'y', type: 'space' },
+        { name: 'x', type: 'space' }
+      ]
+    };
+
+    const result = getCompatibleViewers(manifests, metadata);
+
+    expect(result).toContain('FullViewer');
+    expect(result).not.toContain('LimitedViewer');
+  });
+
+  it('includes viewers with unsupported features (soft requirements)', () => {
+    const manifests = [
+      createManifest('FullViewer', { ome_zarr_versions: [0.4], channels: true }),
       createManifest('LimitedViewer', { ome_zarr_versions: [0.4], channels: false })
     ];
     const metadata: OmeZarrMetadata = {
@@ -61,7 +80,7 @@ describe('getCompatibleViewers', () => {
     const result = getCompatibleViewers(manifests, metadata);
 
     expect(result).toContain('FullViewer');
-    expect(result).not.toContain('LimitedViewer');
+    expect(result).toContain('LimitedViewer');
   });
 
   it('returns empty array when no viewers are compatible', () => {
@@ -106,7 +125,8 @@ describe('getCompatibleViewersWithDetails', () => {
 
     expect(results).toHaveLength(1);
     expect(results[0].name).toBe('TestViewer');
-    expect(results[0].validation).toHaveProperty('compatible');
+    expect(results[0].validation).toHaveProperty('dataCompatible');
+    expect(results[0].validation).toHaveProperty('dataFeaturesSupported');
     expect(results[0].validation).toHaveProperty('errors');
     expect(results[0].validation).toHaveProperty('warnings');
   });
@@ -122,7 +142,7 @@ describe('getCompatibleViewersWithDetails', () => {
 
     expect(results).toHaveLength(1);
     expect(results[0].name).toBe('Compatible');
-    expect(results[0].validation.compatible).toBe(true);
+    expect(results[0].validation.dataCompatible).toBe(true);
     expect(results[0].validation.errors).toHaveLength(0);
   });
 
@@ -146,7 +166,8 @@ describe('getCompatibleViewersWithDetails', () => {
     const results = getCompatibleViewersWithDetails(manifests, metadata);
 
     expect(results).toHaveLength(1);
-    expect(results[0].validation.compatible).toBe(true);
+    expect(results[0].validation.dataCompatible).toBe(true);
+    expect(results[0].validation.dataFeaturesSupported).toBe(false);
     expect(results[0].validation.warnings.length).toBeGreaterThan(0);
   });
 
