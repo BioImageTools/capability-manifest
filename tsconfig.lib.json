@@ -11,6 +11,7 @@
     "src/index.ts",
     "src/loader.ts",
     "src/validator.ts",
+    "src/logo.ts",
     "src/types.ts"
   ],
   "exclude": ["src/app.ts"]

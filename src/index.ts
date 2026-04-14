@@ -55,6 +55,9 @@ export { loadManifestsFromUrls } from './loader.js';
 // Re-export validator functions
 export { validateViewer, isCompatible } from './validator.js';
 
+// Re-export logo utility
+export { getLogoUrl } from './logo.js';
+
 // Re-export types for consumers
 export type {
   ViewerManifest,
