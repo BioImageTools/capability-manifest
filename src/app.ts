@@ -193,7 +193,7 @@ function createLaunchButton(
   button.textContent = 'Launch';
   button.target = '_blank';
 
-  if (validation && !validation.compatible) {
+  if (validation && !validation.dataCompatible) {
     button.classList.add('disabled');
     button.setAttribute('aria-disabled', 'true');
 

@@ -46,7 +46,7 @@ describe('validateViewer', () => {
 
       const result = validateViewer(viewer, metadata);
 
-      expect(result.compatible).toBe(true);
+      expect(result.dataCompatible).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
 
@@ -56,10 +56,10 @@ describe('validateViewer', () => {
 
       const result = validateViewer(viewer, metadata);
 
-      expect(result.compatible).toBe(false);
+      expect(result.dataCompatible).toBe(false);
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0].capability).toBe('ome_zarr_versions');
-      expect(result.errors[0].required).toBe(0.5);
+      expect(result.errors[0].required).toBe('0.5');
       expect(result.errors[0].found).toEqual([0.4]);
     });
 
@@ -72,7 +72,7 @@ describe('validateViewer', () => {
 
       const result = validateViewer(viewer, metadata);
 
-      expect(result.compatible).toBe(true);
+      expect(result.dataCompatible).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
 
@@ -82,7 +82,7 @@ describe('validateViewer', () => {
 
       const result = validateViewer(viewer, metadata);
 
-      expect(result.compatible).toBe(false);
+      expect(result.dataCompatible).toBe(false);
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0].message).toContain('does not specify OME-Zarr version support');
     });
@@ -93,7 +93,7 @@ describe('validateViewer', () => {
 
       const result = validateViewer(viewer, metadata);
 
-      expect(result.compatible).toBe(false);
+      expect(result.dataCompatible).toBe(false);
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0].message).toContain('does not specify OME-Zarr version support');
     });
@@ -104,7 +104,7 @@ describe('validateViewer', () => {
 
       const result = validateViewer(viewer, metadata);
 
-      expect(result.compatible).toBe(false);
+      expect(result.dataCompatible).toBe(false);
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0].capability).toBe('ome_zarr_versions');
       expect(result.errors[0].message).toContain('Metadata does not specify an OME-Zarr version');
@@ -118,7 +118,7 @@ describe('validateViewer', () => {
 
       const result = validateViewer(viewer, metadata);
 
-      expect(result.compatible).toBe(true);
+      expect(result.dataCompatible).toBe(true);
     });
 
     it('returns error when viewer does not support the codec', () => {
@@ -127,29 +127,71 @@ describe('validateViewer', () => {
 
       const result = validateViewer(viewer, metadata);
 
-      expect(result.compatible).toBe(false);
+      expect(result.dataCompatible).toBe(false);
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0].capability).toBe('compression_codecs');
       expect(result.errors[0].required).toBe('zstd');
     });
 
-    it('handles compressor as plain string', () => {
-      const viewer = createViewer({ compression_codecs: ['blosc'] });
-      const metadata = createMetadata({ compressor: 'zstd' });
-
-      const result = validateViewer(viewer, metadata);
-
-      expect(result.compatible).toBe(false);
-      expect(result.errors[0].required).toBe('zstd');
-    });
-
-    it('skips codec check when metadata has no compressor', () => {
+    it('skips codec check when metadata has no compressor or codecs', () => {
       const viewer = createViewer({ compression_codecs: ['blosc'] });
       const metadata = createMetadata({ compressor: undefined });
 
       const result = validateViewer(viewer, metadata);
 
-      expect(result.compatible).toBe(true);
+      expect(result.dataCompatible).toBe(true);
+    });
+
+    it('returns compatible when viewer supports a Zarr v3 codec', () => {
+      const viewer = createViewer({ compression_codecs: ['blosc', 'bytes'] });
+      const metadata = createMetadata({
+        codecs: [{ name: 'bytes' }, { name: 'blosc', configuration: { cname: 'lz4' } }]
+      });
+
+      const result = validateViewer(viewer, metadata);
+
+      expect(result.dataCompatible).toBe(true);
+    });
+
+    it('returns error when viewer does not support a Zarr v3 codec', () => {
+      const viewer = createViewer({ compression_codecs: ['bytes'] });
+      const metadata = createMetadata({
+        codecs: [{ name: 'bytes' }, { name: 'zstd' }]
+      });
+
+      const result = validateViewer(viewer, metadata);
+
+      expect(result.dataCompatible).toBe(false);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].capability).toBe('compression_codecs');
+      expect(result.errors[0].required).toBe('zstd');
+    });
+
+    it('returns multiple errors when viewer does not support multiple Zarr v3 codecs', () => {
+      const viewer = createViewer({ compression_codecs: ['bytes'] });
+      const metadata = createMetadata({
+        codecs: [{ name: 'blosc' }, { name: 'bytes' }, { name: 'zstd' }]
+      });
+
+      const result = validateViewer(viewer, metadata);
+
+      expect(result.dataCompatible).toBe(false);
+      expect(result.errors).toHaveLength(2);
+      expect(result.errors.map(e => e.required)).toEqual(expect.arrayContaining(['blosc', 'zstd']));
+    });
+
+    it('returns warning when viewer declares no codecs and data uses Zarr v3 codecs', () => {
+      const viewer = createViewer({ compression_codecs: undefined });
+      const metadata = createMetadata({
+        codecs: [{ name: 'bytes' }, { name: 'blosc' }]
+      });
+
+      const result = validateViewer(viewer, metadata);
+
+      expect(result.dataCompatible).toBe(true);
+      expect(result.warnings).toHaveLength(1);
+      expect(result.warnings[0].capability).toBe('compression_codecs');
+      expect(result.warnings[0].message).toContain('compatibility unknown');
     });
 
     it('returns warning when viewer has no codec list but data uses compression', () => {
@@ -158,7 +200,7 @@ describe('validateViewer', () => {
 
       const result = validateViewer(viewer, metadata);
 
-      expect(result.compatible).toBe(true);
+      expect(result.dataCompatible).toBe(true);
       expect(result.warnings).toHaveLength(1);
       expect(result.warnings[0].capability).toBe('compression_codecs');
       expect(result.warnings[0].message).toContain('zstd');
@@ -171,7 +213,7 @@ describe('validateViewer', () => {
 
       const result = validateViewer(viewer, metadata);
 
-      expect(result.compatible).toBe(true);
+      expect(result.dataCompatible).toBe(true);
       expect(result.warnings).toHaveLength(1);
       expect(result.warnings[0].capability).toBe('compression_codecs');
       expect(result.warnings[0].message).toContain('blosc');
@@ -188,7 +230,7 @@ describe('validateViewer', () => {
 
       const result = validateViewer(viewer, metadata);
 
-      expect(result.compatible).toBe(true);
+      expect(result.dataCompatible).toBe(true);
       expect(result.warnings).toHaveLength(1);
       expect(result.warnings[0].capability).toBe('axes');
     });
@@ -206,7 +248,7 @@ describe('validateViewer', () => {
   });
 
   describe('channels support', () => {
-    it('returns error when data has channels but viewer does not support them', () => {
+    it('returns warning when data has channels but viewer does not support them', () => {
       const viewer = createViewer({ channels: false });
       const metadata = createMetadata({
         axes: [
@@ -218,9 +260,11 @@ describe('validateViewer', () => {
 
       const result = validateViewer(viewer, metadata);
 
-      expect(result.compatible).toBe(false);
-      expect(result.errors).toHaveLength(1);
-      expect(result.errors[0].capability).toBe('channels');
+      expect(result.dataCompatible).toBe(true);
+      expect(result.dataFeaturesSupported).toBe(false);
+      expect(result.warnings).toContainEqual(
+        expect.objectContaining({ capability: 'channels' })
+      );
     });
 
     it('detects channels by axis name "c"', () => {
@@ -231,7 +275,7 @@ describe('validateViewer', () => {
 
       const result = validateViewer(viewer, metadata);
 
-      expect(result.errors.some(e => e.capability === 'channels')).toBe(true);
+      expect(result.warnings.some(w => w.capability === 'channels')).toBe(true);
     });
 
     it('detects channels by axis type "channel"', () => {
@@ -242,7 +286,7 @@ describe('validateViewer', () => {
 
       const result = validateViewer(viewer, metadata);
 
-      expect(result.errors.some(e => e.capability === 'channels')).toBe(true);
+      expect(result.warnings.some(w => w.capability === 'channels')).toBe(true);
     });
 
     it('returns compatible when viewer supports channels', () => {
@@ -253,12 +297,13 @@ describe('validateViewer', () => {
 
       const result = validateViewer(viewer, metadata);
 
-      expect(result.compatible).toBe(true);
+      expect(result.dataCompatible).toBe(true);
+      expect(result.dataFeaturesSupported).toBe(true);
     });
   });
 
   describe('timepoints support', () => {
-    it('returns error when data has timepoints but viewer does not support them', () => {
+    it('returns warning when data has timepoints but viewer does not support them', () => {
       const viewer = createViewer({ timepoints: false });
       const metadata = createMetadata({
         axes: [
@@ -270,9 +315,11 @@ describe('validateViewer', () => {
 
       const result = validateViewer(viewer, metadata);
 
-      expect(result.compatible).toBe(false);
-      expect(result.errors).toHaveLength(1);
-      expect(result.errors[0].capability).toBe('timepoints');
+      expect(result.dataCompatible).toBe(true);
+      expect(result.dataFeaturesSupported).toBe(false);
+      expect(result.warnings).toContainEqual(
+        expect.objectContaining({ capability: 'timepoints' })
+      );
     });
 
     it('detects timepoints by axis name "t"', () => {
@@ -283,7 +330,7 @@ describe('validateViewer', () => {
 
       const result = validateViewer(viewer, metadata);
 
-      expect(result.errors.some(e => e.capability === 'timepoints')).toBe(true);
+      expect(result.warnings.some(w => w.capability === 'timepoints')).toBe(true);
     });
 
     it('detects timepoints by axis type "time"', () => {
@@ -294,7 +341,7 @@ describe('validateViewer', () => {
 
       const result = validateViewer(viewer, metadata);
 
-      expect(result.errors.some(e => e.capability === 'timepoints')).toBe(true);
+      expect(result.warnings.some(w => w.capability === 'timepoints')).toBe(true);
     });
 
     it('returns compatible when viewer supports timepoints', () => {
@@ -305,7 +352,8 @@ describe('validateViewer', () => {
 
       const result = validateViewer(viewer, metadata);
 
-      expect(result.compatible).toBe(true);
+      expect(result.dataCompatible).toBe(true);
+      expect(result.dataFeaturesSupported).toBe(true);
     });
   });
 
@@ -318,7 +366,7 @@ describe('validateViewer', () => {
 
       const result = validateViewer(viewer, metadata);
 
-      expect(result.compatible).toBe(true);
+      expect(result.dataCompatible).toBe(true);
       expect(result.warnings).toContainEqual(
         expect.objectContaining({ capability: 'labels' })
       );
@@ -332,7 +380,7 @@ describe('validateViewer', () => {
 
       const result = validateViewer(viewer, metadata);
 
-      expect(result.compatible).toBe(true);
+      expect(result.dataCompatible).toBe(true);
     });
 
     it('skips label check when metadata has empty labels array', () => {
@@ -343,7 +391,7 @@ describe('validateViewer', () => {
 
       const result = validateViewer(viewer, metadata);
 
-      expect(result.compatible).toBe(true);
+      expect(result.dataCompatible).toBe(true);
     });
 
     it('skips label check when metadata has no labels', () => {
@@ -354,12 +402,12 @@ describe('validateViewer', () => {
 
       const result = validateViewer(viewer, metadata);
 
-      expect(result.compatible).toBe(true);
+      expect(result.dataCompatible).toBe(true);
     });
   });
 
   describe('HCS plates support', () => {
-    it('returns error when data is HCS plate but viewer does not support them', () => {
+    it('returns warning when data is HCS plate but viewer does not support them', () => {
       const viewer = createViewer({ hcs_plates: false });
       const metadata = createMetadata({
         plate: { wells: [], columns: [] }
@@ -367,12 +415,14 @@ describe('validateViewer', () => {
 
       const result = validateViewer(viewer, metadata);
 
-      expect(result.compatible).toBe(false);
-      expect(result.errors).toHaveLength(1);
-      expect(result.errors[0].capability).toBe('hcs_plates');
+      expect(result.dataCompatible).toBe(true);
+      expect(result.dataFeaturesSupported).toBe(false);
+      expect(result.warnings).toContainEqual(
+        expect.objectContaining({ capability: 'hcs_plates' })
+      );
     });
 
-    it('returns compatible when viewer supports HCS plates', () => {
+    it('returns fully supported when viewer supports HCS plates', () => {
       const viewer = createViewer({ hcs_plates: true });
       const metadata = createMetadata({
         plate: { wells: [], columns: [] }
@@ -380,7 +430,8 @@ describe('validateViewer', () => {
 
       const result = validateViewer(viewer, metadata);
 
-      expect(result.compatible).toBe(true);
+      expect(result.dataCompatible).toBe(true);
+      expect(result.dataFeaturesSupported).toBe(true);
     });
 
     it('skips HCS check when metadata has no plate', () => {
@@ -391,7 +442,7 @@ describe('validateViewer', () => {
 
       const result = validateViewer(viewer, metadata);
 
-      expect(result.compatible).toBe(true);
+      expect(result.dataCompatible).toBe(true);
     });
   });
 
@@ -404,7 +455,7 @@ describe('validateViewer', () => {
 
       const result = validateViewer(viewer, metadata);
 
-      expect(result.compatible).toBe(true);
+      expect(result.dataCompatible).toBe(true);
       expect(result.warnings).toHaveLength(1);
       expect(result.warnings[0].capability).toBe('omero_metadata');
     });
@@ -421,8 +472,102 @@ describe('validateViewer', () => {
     });
   });
 
+  describe('bioformats2raw_layout support', () => {
+    it('returns warning when data uses bioformats2raw layout but viewer does not support it', () => {
+      const viewer = createViewer({ bioformats2raw_layout: false });
+      const metadata = createMetadata({ bioformats2raw_layout: true });
+      const result = validateViewer(viewer, metadata);
+      expect(result.dataCompatible).toBe(true);
+      expect(result.dataFeaturesSupported).toBe(false);
+      expect(result.warnings).toHaveLength(1);
+      expect(result.warnings[0].capability).toBe('bioformats2raw_layout');
+    });
+
+    it('returns no warning when viewer supports bioformats2raw layout', () => {
+      const viewer = createViewer({ bioformats2raw_layout: true });
+      const metadata = createMetadata({ bioformats2raw_layout: true });
+      const result = validateViewer(viewer, metadata);
+      expect(result.dataFeaturesSupported).toBe(true);
+      expect(result.warnings).toHaveLength(0);
+    });
+
+    it('skips bioformats2raw check when metadata does not use it', () => {
+      const viewer = createViewer({ bioformats2raw_layout: false });
+      const metadata = createMetadata({ bioformats2raw_layout: false });
+      const result = validateViewer(viewer, metadata);
+      expect(result.warnings).toHaveLength(0);
+    });
+  });
+
+  describe('scale support', () => {
+    const metadataWithScale = createMetadata({
+      multiscales: [{
+        version: '0.4',
+        axes: [{ name: 'y', type: 'space' }, { name: 'x', type: 'space' }],
+        datasets: [{ path: '0', coordinateTransformations: [{ type: 'scale', scale: [0.5, 0.5] }] }]
+      }]
+    });
+
+    it('returns warning when data has scale transforms and viewer does not support them', () => {
+      const viewer = createViewer({ scale: false });
+      const result = validateViewer(viewer, metadataWithScale);
+      expect(result.dataCompatible).toBe(true);
+      expect(result.dataFeaturesSupported).toBe(false);
+      expect(result.warnings[0].capability).toBe('scale');
+    });
+
+    it('no warning when viewer supports scale', () => {
+      const viewer = createViewer({ scale: true });
+      const result = validateViewer(viewer, metadataWithScale);
+      expect(result.warnings.filter(w => w.capability === 'scale')).toHaveLength(0);
+    });
+
+    it('returns warning when viewer does not declare scale (undefined)', () => {
+      const viewer = createViewer({ scale: undefined });
+      const result = validateViewer(viewer, metadataWithScale);
+      expect(result.warnings.filter(w => w.capability === 'scale')).toHaveLength(1);
+    });
+  });
+
+  describe('translation support', () => {
+    const metadataWithTranslation = createMetadata({
+      multiscales: [{
+        version: '0.4',
+        axes: [{ name: 'y', type: 'space' }, { name: 'x', type: 'space' }],
+        datasets: [{ path: '0', coordinateTransformations: [{ type: 'translation', translation: [10, 20] }] }]
+      }]
+    });
+
+    it('returns warning when data has translation transforms and viewer does not support them', () => {
+      const viewer = createViewer({ translation: false });
+      const result = validateViewer(viewer, metadataWithTranslation);
+      expect(result.dataCompatible).toBe(true);
+      expect(result.dataFeaturesSupported).toBe(false);
+      expect(result.warnings[0].capability).toBe('translation');
+    });
+
+    it('no warning when viewer supports translation', () => {
+      const viewer = createViewer({ translation: true });
+      const result = validateViewer(viewer, metadataWithTranslation);
+      expect(result.warnings.filter(w => w.capability === 'translation')).toHaveLength(0);
+    });
+
+    it('no warning when metadata has no translation transforms', () => {
+      const viewer = createViewer({ translation: false });
+      const metadataNoTranslation = createMetadata({
+        multiscales: [{
+          version: '0.4',
+          axes: [{ name: 'y', type: 'space' }, { name: 'x', type: 'space' }],
+          datasets: [{ path: '0', coordinateTransformations: [{ type: 'scale', scale: [1, 1] }] }]
+        }]
+      });
+      const result = validateViewer(viewer, metadataNoTranslation);
+      expect(result.warnings.filter(w => w.capability === 'translation')).toHaveLength(0);
+    });
+  });
+
   describe('multiple validation issues', () => {
-    it('collects multiple errors', () => {
+    it('collects errors for hard requirements and warnings for soft requirements', () => {
       const viewer = createViewer({
         ome_zarr_versions: [0.4],
         channels: false,
@@ -440,11 +585,14 @@ describe('validateViewer', () => {
 
       const result = validateViewer(viewer, metadata);
 
-      expect(result.compatible).toBe(false);
-      expect(result.errors).toHaveLength(3);
+      expect(result.dataCompatible).toBe(false);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].capability).toBe('ome_zarr_versions');
+      expect(result.warnings.some(w => w.capability === 'channels')).toBe(true);
+      expect(result.warnings.some(w => w.capability === 'timepoints')).toBe(true);
     });
 
-    it('collects both errors and warnings', () => {
+    it('collects warnings from both feature and metadata checks', () => {
       const viewer = createViewer({
         channels: false,
         axes: false,
@@ -457,9 +605,10 @@ describe('validateViewer', () => {
 
       const result = validateViewer(viewer, metadata);
 
-      expect(result.compatible).toBe(false);
-      expect(result.errors.length).toBeGreaterThan(0);
-      expect(result.warnings.length).toBeGreaterThan(0);
+      expect(result.dataCompatible).toBe(true);
+      expect(result.dataFeaturesSupported).toBe(false);
+      expect(result.errors).toHaveLength(0);
+      expect(result.warnings.length).toBeGreaterThanOrEqual(3);
     });
   });
 });

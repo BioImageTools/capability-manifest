@@ -1,5 +1,5 @@
 // Schema types
-export interface Schema {
+export type Schema = {
   properties: {
     viewer: {
       properties: {
@@ -12,7 +12,7 @@ export interface Schema {
       };
     };
   };
-}
+};
 
 export interface PropertyDefinition {
   type: string;
@@ -28,11 +28,12 @@ export interface CapabilityDefinition extends PropertyDefinition {
 }
 
 // Viewer manifest types
-export interface ViewerManifest {
+export type ViewerManifest = {
   viewer: {
     name: string;
     version: string;
     repo?: string;
+    logo?: string;
     template_url?: string;
   };
   capabilities: {
@@ -49,46 +50,74 @@ export interface ViewerManifest {
     bioformats2raw_layout?: boolean;
     omero_metadata?: boolean;
   };
-}
+};
 
 // OME-Zarr metadata types
-export interface OmeZarrMetadata {
-  version?: string;
-  axes?: AxisMetadata[];
-  multiscales?: MultiscaleMetadata[];
-  omero?: any;
-  labels?: string[];
-  plate?: any;
-  compressor?: any;
-}
-
-export interface AxisMetadata {
+export type AxisMetadata = {
   name: string;
   type?: string;
   unit?: string;
-}
+};
 
-export interface MultiscaleMetadata {
+export type CoordinateTransformation =
+  | { type: 'identity' }
+  | { type: 'scale'; scale: number[] }
+  | { type: 'scale'; path: string }
+  | { type: 'translation'; translation: number[] }
+  | { type: 'translation'; path: string };
+
+export type DatasetMetadata = {
+  path: string;
+  coordinateTransformations?: CoordinateTransformation[];
+};
+
+export type MultiscaleMetadata = {
   version?: string;
   axes?: AxisMetadata[];
-  datasets?: any[];
-}
+  datasets: DatasetMetadata[];
+  coordinateTransformations?: CoordinateTransformation[];
+  [key: string]: unknown;
+};
+
+export type OmeZarrMetadata = {
+  version?: string;
+  axes?: AxisMetadata[];
+  bioformats2raw_layout?: boolean;
+  multiscales?: MultiscaleMetadata[];
+  omero?: { [key: string]: unknown };
+  labels?: string[];
+  plate?: { [key: string]: unknown };
+  well?: { [key: string]: unknown };
+  compressor?: { id: string; [key: string]: unknown } | null;  // Zarr v2
+  codecs?: Array<{ name: string; configuration?: { [key: string]: unknown } }>;  // Zarr v3
+};
 
 // Validation types
-export interface ValidationResult {
-  compatible: boolean;
+export type ValidationResult = {
+  /** Can the viewer read and parse this data? Determines whether a viewer is shown.
+   * Determined by ome_zarr_versions, compression_codecs, and rfcs_supported.
+   */
+  dataCompatible: boolean;
+  /**
+   * Does the viewer support all features in this data? Determines whether
+   * warnings are shown/logged, NOT whether the viewer is shown. A viewer may be
+   * compatible with a dataset but not support all features
+   */
+  dataFeaturesSupported: boolean;
+  /** Data compatibility errors (e.g. unsupported version or codec) */
   errors: ValidationError[];
+  /** Unsupported data feature warnings (e.g. labels, channels not supported) */
   warnings: ValidationWarning[];
-}
+};
 
-export interface ValidationError {
+export type ValidationError = {
   capability: string;
   message: string;
   required: any;
   found: any;
-}
+};
 
-export interface ValidationWarning {
+export type ValidationWarning = {
   capability: string;
   message: string;
-}
+};

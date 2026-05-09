@@ -80,7 +80,7 @@ Returns whether a single viewer is compatible with the given metadata.
 
 #### `validateViewer(viewer: ViewerManifest, metadata: OmeZarrMetadata): ValidationResult`
 
-Returns full validation details (compatible flag, errors, warnings) for a single viewer against the given metadata.
+Returns full validation details (`dataCompatible`, `dataFeaturesSupported`, errors, warnings) for a single viewer against the given metadata.
 
 ### Types
 
@@ -92,16 +92,133 @@ The library exports TypeScript types for all data structures:
 - `ValidationError`, `ValidationWarning` - Detailed validation messages
 - `AxisMetadata`, `MultiscaleMetadata` - Nested metadata types
 
-## Manifest Specification (DRAFT)
+## Icons
 
-| Attribute             | Description                                                                                                                                                                                                                                                                           |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ome_zarr_versions     | List of OME-NGFF versions which are supported by the tool. When a Zarr group with multiscales metadata containing a version listed here is given to the tool, the tool promises to do something useful. However, it may not support every feature of the specification.               |
-| rfcs_supported        | List of supported RFC numbers which have been implemented on top of the released OME-NGFF versions listed in ome_zarr_versions. Given test data produced for a given RFC listed here, the tool promises to do something useful. However, it may not support every feature of the RFC. |
-| bioformats2raw_layout | A tool that advertises support for this will be able to open a Zarr that implements this transitional layout.                                                                                                                                                                         |
-| omero_metadata        | A tool that advertises support for this will be able to open a Zarr that implements this transitional metadata, for example by defaulting channel colors with the provided color values.                                                                                              |
-| labels                | A tool that advertises support will open pixel-annotation metadata found in the "labels" group.                                                                                                                                                                                       |
-| hcs_plates            | A tool that advertises support will open high content screening datasets found in the "plate" group.                                                                                                                                                                                  |
+Icons for canonical viewers are hosted in the [`public/icons/`](public/icons/) directory and served via GitHub Pages at:
+
+```
+https://raw.githubusercontent.com/bioimagetools/capability-manifest/host-manifests-and-docs/public/icons/{slug}.png
+```
+
+where `{slug}` is the viewer name lowercased with spaces replaced by hyphens (e.g. `"OME-Zarr Validator"` → `ome-zarr-validator.png`). Consumers can derive this URL automatically and fall back to a local placeholder when the icon is unavailable.
+
+The `logo` field in the `viewer` section is an optional override for cases where this convention does not apply.
+
+## Canonical Manifests
+
+This repository hosts canonical capability manifests for well-known OME-Zarr viewers in the [`manifests/`](manifests/) directory:
+
+| Manifest | Viewer | OME-Zarr Versions |
+| --- | --- | --- |
+| [neuroglancer.yaml](manifests/neuroglancer.yaml) | Neuroglancer | 0.4, 0.5 |
+| [avivator.yaml](manifests/avivator.yaml) | Avivator (Viv) | 0.4 |
+| [validator.yaml](manifests/validator.yaml) | OME-Zarr Validator | 0.4, 0.5 |
+| [vole.yaml](manifests/vole.yaml) | Vol-E | 0.4, 0.5 |
+
+Consumers can load these manifests by URL directly from GitHub (raw content URLs) or host copies on their own infrastructure.
+
+Viewer developers are encouraged to maintain their own manifests and submit PRs to update the canonical versions here when capabilities change.
+
+## Manifest Schema (DRAFT)
+
+A capability manifest is a YAML file with two top-level sections: `viewer` and `capabilities`.
+
+### `viewer` Section
+
+Identifies the tool and provides a URL template for launching it.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `name` | string | yes | Human-readable name of the viewer |
+| `version` | string | yes | Version of the viewer these capabilities describe |
+| `repo` | string | no | URL of the source code repository |
+| `logo` | string | no | URL to a logo image for the viewer. Optional override — consumers may derive a logo URL by convention (see [Icons](#icons)). Omit if the conventional path applies. |
+| `template_url` | string | no | URL template for opening a dataset. Use `{DATA_URL}` as a placeholder for the dataset URL — consumers replace it at runtime with the actual OME-Zarr location |
+
+Example:
+
+```yaml
+viewer:
+  name: "Neuroglancer"
+  version: "2.41.2"
+  repo: "https://github.com/google/neuroglancer"
+  template_url: https://neuroglancer-demo.appspot.com/#!{"layers":[{"name":"image","source":"{DATA_URL}","type":"image"}]}
+```
+
+### `capabilities` Section
+
+Describes which OME-Zarr features the tool supports. All fields are optional — omitting a field means the capability is unknown/undeclared.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `ome_zarr_versions` | number[] | OME-NGFF specification versions the tool can load (e.g. `[0.4, 0.5]`). When a dataset's multiscales metadata contains a version listed here, the tool should be able to open it. |
+| `compression_codecs` | string[] | Compression codecs the tool can decode (e.g. `["blosc", "zstd", "gzip"]`). An empty array `[]` means the tool does not declare codec support — compatibility is unknown rather than unsupported. |
+| `rfcs_supported` | number[] | RFC numbers implemented on top of the released OME-NGFF versions. Given test data for a listed RFC, the tool should handle it. |
+| `axes` | boolean | Whether axis names and units from the metadata are respected |
+| `scale` | boolean | Whether scaling factors on multiscale datasets are respected |
+| `translation` | boolean | Whether translation offsets (including subpixel offsets for lower scale levels) are respected |
+| `channels` | boolean | Whether the tool supports datasets with multiple channels (c axis) |
+| `timepoints` | boolean | Whether the tool supports datasets with multiple timepoints (t axis) |
+| `labels` | boolean | Whether pixel-annotation metadata in the "labels" group is loaded |
+| `hcs_plates` | boolean | Whether high content screening datasets in the "plate" group are loaded |
+| `bioformats2raw_layout` | boolean | Whether the tool can open Zarr stores using the bioformats2raw transitional layout |
+| `omero_metadata` | boolean | Whether the tool uses OMERO metadata (e.g. to set default channel colors) |
+
+Example:
+
+```yaml
+capabilities:
+  ome_zarr_versions: [0.4, 0.5]
+  compression_codecs: ["blosc", "zstd", "gzip"]
+  rfcs_supported: []
+  axes: true
+  scale: true
+  translation: true
+  channels: true
+  timepoints: true
+  labels: false
+  hcs_plates: false
+  bioformats2raw_layout: false
+  omero_metadata: true
+```
+
+### How `validateViewer()` Uses the Manifest
+
+The `validateViewer()` function checks a manifest's declared capabilities against a dataset's `OmeZarrMetadata` and returns a `ValidationResult`:
+
+```typescript
+interface ValidationResult {
+  dataCompatible: boolean;        // true if no errors (viewer can open the data)
+  dataFeaturesSupported: boolean; // true if no warnings (viewer fully supports all data features)
+  errors: ValidationError[];      // hard failures — data will not load
+  warnings: ValidationWarning[];  // soft issues — data loads but features may be missing
+}
+```
+
+Capabilities fall into two levels:
+
+- **Data compatibility** (`errors`): Hard requirements. If unmet, the viewer cannot open or render the data at all — it should not be shown.
+- **Data support** (`warnings`): Soft requirements. If unmet, the viewer can still open the data but may not display certain features — it should still be shown, with warnings logged or surfaced to the user.
+
+The checks performed, in order:
+
+| Check | Metadata field | Manifest field | Level | Result if mismatch |
+| --- | --- | --- | --- | --- |
+| OME-Zarr version | `version` or `multiscales[0].version` | `ome_zarr_versions` | **Compatibility** | **Error** — viewer cannot load this version |
+| Compression codec | `compressor.id` | `compression_codecs` | **Compatibility** | **Error** if codec not listed; **Warning** if viewer declares no codecs (unknown support) |
+| Axes metadata | `axes` | `axes` | **Support** | **Warning** — axis names/units may be ignored |
+| Channel support | `axes` contains c/channel | `channels` | **Support** | **Warning** — multi-channel data may not render correctly |
+| Timepoint support | `axes` contains t/time | `timepoints` | **Support** | **Warning** — time-series data may not render correctly |
+| Labels | `labels` array non-empty | `labels` | **Support** | **Warning** — labels won't be displayed |
+| HCS plates | `plate` present | `hcs_plates` | **Support** | **Warning** — plate layout won't be shown |
+| OMERO metadata | `omero` present | `omero_metadata` | **Support** | **Warning** — channel colors etc. won't be applied |
+| Scale transforms | `multiscales[].datasets[].coordinateTransformations` type `scale` | `scale` | **Support** | **Warning** — scaling factors may be ignored |
+| Translation offsets | `multiscales[].datasets[].coordinateTransformations` type `translation` | `translation` | **Support** | **Warning** — coordinate offsets may be ignored |
+| bioformats2raw layout | `bioformats2raw_layout` | `bioformats2raw_layout` | **Support** | **Warning** — layout may not be traversed correctly |
+
+> **Note on `rfcs_supported`:** Although `rfcs_supported` is a hard compatibility requirement (it determines whether a viewer can parse RFC-mandated metadata structures), no validation check is currently implemented. OME-NGFF metadata does not yet expose which RFCs a dataset requires — this is a spec-level gap. When the spec defines a `rfcs_required` field, the validator will compare it against `viewer.capabilities.rfcs_supported` and produce an error on mismatch.
+
+A viewer is considered **data-compatible** (`dataCompatible: true`) when there are zero errors — it should be shown to the user. `dataFeaturesSupported` is `false` when there are warnings, indicating the viewer can open the data but may not display all features.
 
 ## Prototype
 

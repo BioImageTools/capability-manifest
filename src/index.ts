@@ -45,11 +45,8 @@ export function getCompatibleViewersWithDetails(
   metadata: OmeZarrMetadata
 ): Array<{ name: string; validation: ValidationResult }> {
   return manifests
-    .filter(viewer => isCompatible(viewer, metadata))
-    .map(viewer => ({
-      name: viewer.viewer.name,
-      validation: validateViewer(viewer, metadata)
-    }));
+    .map(viewer => ({ name: viewer.viewer.name, validation: validateViewer(viewer, metadata) }))
+    .filter(({ validation }) => validation.dataCompatible);
 }
 
 // Re-export loader
@@ -57,6 +54,9 @@ export { loadManifestsFromUrls } from './loader.js';
 
 // Re-export validator functions
 export { validateViewer, isCompatible } from './validator.js';
+
+// Re-export logo utility
+export { getLogoUrl } from './logo.js';
 
 // Re-export types for consumers
 export type {
