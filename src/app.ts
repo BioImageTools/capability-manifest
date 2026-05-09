@@ -111,7 +111,7 @@ async function loadZarrMetadata(url: string): Promise<OmeZarrMetadata> {
       version: omeZarrVersion,
       axes: axes,
       multiscales: multiscales,
-      omero: omero,
+      omero: omero ?? undefined,
       labels: undefined,
       plate: undefined,
       compressor: undefined
