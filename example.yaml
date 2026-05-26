@@ -1,13 +1,15 @@
-
 viewer:
   name: "MyDataViewer"
   version: "2.3.1"
   repo: "https://github.com/org/viewer"
   template_url: "https://example.com/viewer?url={DATA_URL}"
-  
+
 capabilities:
   # Enumeration of OME-Zarr versions that can be loaded
   ome_zarr_versions: [0.4, 0.5]
+
+  # Compression codecs the tool can decode. An empty array `[]` means the tool does not declare codec support — compatibility is unknown rather than unsupported.
+  compression_codecs: ["blosc", "zstd", "gzip"]
 
   # Which additional RFCs are supported?
   rfcs_supported: [5, 9]
