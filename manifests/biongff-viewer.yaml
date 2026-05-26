@@ -8,6 +8,22 @@ capabilities:
   # Enumeration of OME-Zarr versions that can be loaded
   ome_zarr_versions: [0.4, 0.5]
 
+  # Compression codecs the tool can decode. An empty array `[]` means the tool does not declare codec support — compatibility is unknown rather than unsupported.
+  compression_codecs:
+    [
+      "blosc",
+      "lz4",
+      "zstd",
+      "gzip",
+      "zlib",
+      "transpose",
+      "bytes",
+      "crc32c",
+      "vlen-utf8",
+      "json2",
+      "bitround",
+    ]
+
   # Are axis names and units respected?
   axes: true
 
