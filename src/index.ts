@@ -13,8 +13,12 @@
  *   const viewers = getCompatibleViewers([...manifests.values()], metadata);
  */
 
-import { validateViewer, isCompatible } from './validator.js';
-import type { ViewerManifest, OmeZarrMetadata, ValidationResult } from './types.js';
+import { validateViewer, isCompatible } from "./validator.js";
+import type {
+  ViewerManifest,
+  OmeZarrMetadata,
+  ValidationResult,
+} from "./types.js";
 
 /**
  * Get list of viewer names compatible with the given OME-Zarr metadata.
@@ -25,11 +29,11 @@ import type { ViewerManifest, OmeZarrMetadata, ValidationResult } from './types.
  */
 export function getCompatibleViewers(
   manifests: ViewerManifest[],
-  metadata: OmeZarrMetadata
+  metadata: OmeZarrMetadata,
 ): string[] {
   return manifests
-    .filter(viewer => isCompatible(viewer, metadata))
-    .map(viewer => viewer.viewer.name);
+    .filter((viewer) => isCompatible(viewer, metadata))
+    .map((viewer) => viewer.viewer.name);
 }
 
 /**
@@ -42,29 +46,43 @@ export function getCompatibleViewers(
  */
 export function getCompatibleViewersWithDetails(
   manifests: ViewerManifest[],
-  metadata: OmeZarrMetadata
+  metadata: OmeZarrMetadata,
 ): Array<{ name: string; validation: ValidationResult }> {
   return manifests
-    .map(viewer => ({ name: viewer.viewer.name, validation: validateViewer(viewer, metadata) }))
+    .map((viewer) => ({
+      name: viewer.viewer.name,
+      validation: validateViewer(viewer, metadata),
+    }))
     .filter(({ validation }) => validation.dataCompatible);
 }
 
 // Re-export loader
-export { loadManifestsFromUrls } from './loader.js';
+export { loadManifestsFromUrls } from "./loader.js";
 
 // Re-export validator functions
-export { validateViewer, isCompatible } from './validator.js';
+export { validateViewer, isCompatible } from "./validator.js";
 
 // Re-export logo utility
-export { getLogoUrl } from './logo.js';
+export { getLogoUrl } from "./logo.js";
 
 // Re-export types for consumers
 export type {
   ViewerManifest,
-  OmeZarrMetadata,
   ValidationResult,
   ValidationError,
   ValidationWarning,
+} from "./types.js";
+
+// Re-export canonical OME-Zarr metadata types
+export type {
+  OmeZarrMetadata,
   AxisMetadata,
-  MultiscaleMetadata
-} from './types.js';
+  CoordinateTransformation,
+  DatasetMetadata,
+  MultiscaleMetadata,
+  OmeroWindow,
+  OmeroChannel,
+  OmeroMetadata,
+  PlateMetadata,
+  WellMetadata,
+} from "./omezarr.js";
