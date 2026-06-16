@@ -207,6 +207,69 @@ describe('validateViewer', () => {
       expect(result.warnings[0].message).toContain('compatibility unknown');
     });
 
+    it('is compatible when v3 data uses only a structural serialization codec', () => {
+      // Regression: every Zarr v3 array carries a `bytes` (array_to_bytes)
+      // serialization codec. It must not be compared against the viewer's
+      // compression codec list, or every real v3 dataset hides such viewers.
+      const viewer = createViewer({
+        ome_zarr_versions: [0.4, 0.5],
+        compression_codecs: ['blosc', 'zstd', 'zlib', 'lz4', 'gzip']
+      });
+      const metadata = createMetadata({
+        version: '0.5',
+        codecs: [{ name: 'bytes' }]
+      });
+
+      const result = validateViewer(viewer, metadata);
+
+      expect(result.dataCompatible).toBe(true);
+      expect(result.errors).toHaveLength(0);
+      expect(result.warnings.filter(w => w.capability === 'compression_codecs')).toHaveLength(0);
+    });
+
+    it('ignores structural codecs when checking a supported compression codec', () => {
+      const viewer = createViewer({ ome_zarr_versions: [0.4, 0.5], compression_codecs: ['blosc'] });
+      const metadata = createMetadata({
+        version: '0.5',
+        codecs: [{ name: 'transpose' }, { name: 'bytes' }, { name: 'blosc' }, { name: 'crc32c' }]
+      });
+
+      const result = validateViewer(viewer, metadata);
+
+      expect(result.dataCompatible).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it('warns but stays compatible when data uses an unrecognized codec the viewer does not list', () => {
+      const viewer = createViewer({ ome_zarr_versions: [0.4, 0.5], compression_codecs: ['blosc'] });
+      const metadata = createMetadata({
+        version: '0.5',
+        codecs: [{ name: 'bytes' }, { name: 'some-future-codec' }]
+      });
+
+      const result = validateViewer(viewer, metadata);
+
+      expect(result.dataCompatible).toBe(true);
+      expect(result.errors).toHaveLength(0);
+      expect(result.warnings).toHaveLength(1);
+      expect(result.warnings[0].capability).toBe('compression_codecs');
+      expect(result.warnings[0].message).toContain('some-future-codec');
+      expect(result.warnings[0].message).toContain('compatibility unknown');
+    });
+
+    it('does not warn for an unrecognized codec the viewer explicitly lists', () => {
+      const viewer = createViewer({ ome_zarr_versions: [0.4, 0.5], compression_codecs: ['blosc', 'some-future-codec'] });
+      const metadata = createMetadata({
+        version: '0.5',
+        codecs: [{ name: 'bytes' }, { name: 'some-future-codec' }]
+      });
+
+      const result = validateViewer(viewer, metadata);
+
+      expect(result.dataCompatible).toBe(true);
+      expect(result.warnings.filter(w => w.capability === 'compression_codecs')).toHaveLength(0);
+    });
+
     it('returns warning when viewer has empty codec list but data uses compression', () => {
       const viewer = createViewer({ compression_codecs: [] });
       const metadata = createMetadata({ compressor: { id: 'blosc' } });

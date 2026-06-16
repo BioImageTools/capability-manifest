@@ -13,7 +13,8 @@
     "src/validator.ts",
     "src/logo.ts",
     "src/types.ts",
-    "src/omezarr.ts"
+    "src/omezarr.ts",
+    "src/codecs.ts"
   ],
   "exclude": ["src/app.ts"]
 }

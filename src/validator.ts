@@ -6,6 +6,7 @@ import type {
   ValidationError,
   ValidationWarning,
 } from "./types.js";
+import { classifyCodec } from "./codecs.js";
 
 function hasTransformationType(
   multiscales: MultiscaleMetadata[],
@@ -75,27 +76,42 @@ export function validateViewer(
     });
   }
 
-  // Collect codecs from Zarr v2 (compressor.id) or Zarr v3 (codecs[].name)
-  const dataCodecs: string[] = [];
+  // Collect the codecs the viewer must be able to decompress. Zarr v2 exposes a
+  // single compressor via compressor.id (always an actual compression codec);
+  // Zarr v3 exposes an ordered pipeline via codecs[] that also contains
+  // serialization codecs, transforms, and checksums, which must NOT be compared
+  // against the viewer's compression codec list. See classifyCodec().
+  const compressionCodecs: string[] = [];
+  const unknownCodecs: string[] = [];
   if (metadata.compressor?.id) {
-    dataCodecs.push(metadata.compressor.id);
-  } else if (metadata.codecs && metadata.codecs.length > 0) {
-    dataCodecs.push(...metadata.codecs.map((c) => c.name));
+    compressionCodecs.push(metadata.compressor.id);
+  } else if (metadata.codecs) {
+    for (const codec of metadata.codecs) {
+      switch (classifyCodec(codec.name)) {
+        case "compression":
+          compressionCodecs.push(codec.name);
+          break;
+        case "unknown":
+          unknownCodecs.push(codec.name);
+          break;
+        // "structural" codecs are not relevant to compression compatibility.
+      }
+    }
   }
 
-  if (dataCodecs.length > 0) {
+  if (compressionCodecs.length > 0) {
     if (
       !viewer.capabilities.compression_codecs ||
       viewer.capabilities.compression_codecs.length === 0
     ) {
       // Viewer doesn't declare codec support - can't guarantee compatibility
-      const codecList = dataCodecs.join("', '");
+      const codecList = compressionCodecs.join("', '");
       warnings.push({
         capability: "compression_codecs",
         message: `Data uses codec '${codecList}' but viewer doesn't declare codec support - compatibility unknown`,
       });
     } else {
-      for (const codec of dataCodecs) {
+      for (const codec of compressionCodecs) {
         if (!viewer.capabilities.compression_codecs.includes(codec)) {
           errors.push({
             capability: "compression_codecs",
@@ -105,6 +121,18 @@ export function validateViewer(
           });
         }
       }
+    }
+  }
+
+  // Codecs we cannot classify can be neither confirmed compatible nor ruled
+  // incompatible. Warn (rather than error) unless the viewer explicitly lists
+  // the codec, so a novel codec never silently hides a viewer or passes as fine.
+  for (const codec of unknownCodecs) {
+    if (!viewer.capabilities.compression_codecs?.includes(codec)) {
+      warnings.push({
+        capability: "compression_codecs",
+        message: `Data uses unrecognized codec '${codec}' - compatibility unknown`,
+      });
     }
   }
 

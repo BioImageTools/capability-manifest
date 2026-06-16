@@ -205,7 +205,7 @@ The checks performed, in order:
 | Check | Metadata field | Manifest field | Level | Result if mismatch |
 | --- | --- | --- | --- | --- |
 | OME-Zarr version | `version` or `multiscales[0].version` | `ome_zarr_versions` | **Compatibility** | **Error** — viewer cannot load this version |
-| Compression codec | `compressor.id` | `compression_codecs` | **Compatibility** | **Error** if codec not listed; **Warning** if viewer declares no codecs (unknown support) |
+| Compression codec | `compressor.id` (Zarr v2) or compression codecs in `codecs[]` (Zarr v3) | `compression_codecs` | **Compatibility** | **Error** if codec not listed; **Warning** if viewer declares no codecs (unknown support) |
 | Axes metadata | `axes` | `axes` | **Support** | **Warning** — axis names/units may be ignored |
 | Channel support | `axes` contains c/channel | `channels` | **Support** | **Warning** — multi-channel data may not render correctly |
 | Timepoint support | `axes` contains t/time | `timepoints` | **Support** | **Warning** — time-series data may not render correctly |
@@ -215,6 +215,8 @@ The checks performed, in order:
 | Scale transforms | `multiscales[].datasets[].coordinateTransformations` type `scale` | `scale` | **Support** | **Warning** — scaling factors may be ignored |
 | Translation offsets | `multiscales[].datasets[].coordinateTransformations` type `translation` | `translation` | **Support** | **Warning** — coordinate offsets may be ignored |
 | bioformats2raw layout | `bioformats2raw_layout` | `bioformats2raw_layout` | **Support** | **Warning** — layout may not be traversed correctly |
+
+> **Note on Zarr v3 codecs:** A Zarr v3 array declares an ordered codec pipeline (`codecs[]`) containing array_to_array transforms (e.g. `transpose`), an array_to_bytes serialization codec (`bytes`, `sharding_indexed` — always present), and bytes_to_bytes codecs (compression such as `blosc`/`zstd`, plus checksums such as `crc32c`). Only the *compression* codecs are compared against `compression_codecs`; serialization, transform, and checksum codecs are ignored. An unrecognized codec produces a **Warning** (compatibility unknown) rather than an error, so a novel codec never silently hides a viewer. See `classifyCodec`.
 
 > **Note on `rfcs_supported`:** Although `rfcs_supported` is a hard compatibility requirement (it determines whether a viewer can parse RFC-mandated metadata structures), no validation check is currently implemented. OME-NGFF metadata does not yet expose which RFCs a dataset requires — this is a spec-level gap. When the spec defines a `rfcs_required` field, the validator will compare it against `viewer.capabilities.rfcs_supported` and produce an error on mismatch.
 

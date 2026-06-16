@@ -65,6 +65,10 @@ export { validateViewer, isCompatible } from "./validator.js";
 // Re-export logo utility
 export { getLogoUrl } from "./logo.js";
 
+// Re-export codec classification
+export { classifyCodec } from "./codecs.js";
+export type { CodecCompression } from "./codecs.js";
+
 // Re-export types for consumers
 export type {
   ViewerManifest,
