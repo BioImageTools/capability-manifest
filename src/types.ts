@@ -52,45 +52,21 @@ export type ViewerManifest = {
   };
 };
 
-// OME-Zarr metadata types
-export type AxisMetadata = {
-  name: string;
-  type?: string;
-  unit?: string;
-};
-
-export type CoordinateTransformation =
-  | { type: 'identity' }
-  | { type: 'scale'; scale: number[] }
-  | { type: 'scale'; path: string }
-  | { type: 'translation'; translation: number[] }
-  | { type: 'translation'; path: string };
-
-export type DatasetMetadata = {
-  path: string;
-  coordinateTransformations?: CoordinateTransformation[];
-};
-
-export type MultiscaleMetadata = {
-  version?: string;
-  axes?: AxisMetadata[];
-  datasets: DatasetMetadata[];
-  coordinateTransformations?: CoordinateTransformation[];
-  [key: string]: unknown;
-};
-
-export type OmeZarrMetadata = {
-  version?: string;
-  axes?: AxisMetadata[];
-  bioformats2raw_layout?: boolean;
-  multiscales?: MultiscaleMetadata[];
-  omero?: { [key: string]: unknown };
-  labels?: string[];
-  plate?: { [key: string]: unknown };
-  well?: { [key: string]: unknown };
-  compressor?: { id: string; [key: string]: unknown } | null;  // Zarr v2
-  codecs?: Array<{ name: string; configuration?: { [key: string]: unknown } }>;  // Zarr v3
-};
+// OME-Zarr metadata types live in their own dependency-free module so they can
+// be extracted into a standalone shared package later. Re-exported here for
+// backward compatibility with existing `./types.js` imports.
+export type {
+  AxisMetadata,
+  CoordinateTransformation,
+  DatasetMetadata,
+  MultiscaleMetadata,
+  OmeroWindow,
+  OmeroChannel,
+  OmeroMetadata,
+  PlateMetadata,
+  WellMetadata,
+  OmeZarrMetadata
+} from './omezarr.js';
 
 // Validation types
 export type ValidationResult = {

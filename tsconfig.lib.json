@@ -12,7 +12,8 @@
     "src/loader.ts",
     "src/validator.ts",
     "src/logo.ts",
-    "src/types.ts"
+    "src/types.ts",
+    "src/omezarr.ts"
   ],
   "exclude": ["src/app.ts"]
 }
