@@ -1,27 +1,37 @@
 viewer:
-  name: "MyDataViewer"
-  version: "2.3.1"
-  repo: "https://github.com/org/viewer"
-  template_url: "https://example.com/viewer?url={DATA_URL}"
+  name: "BioNGFF Viewer"
+  version: "0.1.0"
+  repo: "https://github.com/BioNGFF/biongff-viewer"
+  template_url: "https://biongff.github.io/biongff-viewer/?source={DATA_URL}"
 
 capabilities:
   # Enumeration of OME-Zarr versions that can be loaded
   ome_zarr_versions: [0.4, 0.5]
 
   # Compression codecs the tool can decode. An empty array `[]` means the tool does not declare codec support — compatibility is unknown rather than unsupported.
-  compression_codecs: ["blosc", "zstd", "gzip"]
-
-  # Which additional RFCs are supported?
-  rfcs_supported: [5, 9]
+  compression_codecs:
+    [
+      "blosc",
+      "lz4",
+      "zstd",
+      "gzip",
+      "zlib",
+      "transpose",
+      "bytes",
+      "crc32c",
+      "vlen-utf8",
+      "json2",
+      "bitround",
+    ]
 
   # Are axis names and units respected?
   axes: true
 
   # Are scaling factors respected on multiscales?
-  scale: true
+  scale: false
 
   # Are translation factors respected on multiscales (including subpixel offsets for lower scale levels)?
-  translation: true
+  translation: false
 
   # Does the tool support multiple channels?
   channels: true
@@ -33,10 +43,10 @@ capabilities:
   labels: true
 
   # Are HCS plates loaded when available?
-  hcs_plates: false
+  hcs_plates: true
 
   # Does the viewer handle multiple images in a bioformats2raw layout?
-  bioformats2raw_layout: false
+  bioformats2raw_layout: true
 
   # Is the OMERO metadata used to e.g. color the channels?
   omero_metadata: true
