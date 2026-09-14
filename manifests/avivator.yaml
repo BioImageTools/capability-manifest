@@ -8,7 +8,7 @@ capabilities:
   # Enumeration of OME-Zarr versions that can be loaded
   ome_zarr_versions: [0.4]
 
-  compression_codecs: ["blosc", "gzip"]
+  compression_codecs: ["blosc", "gzip", "zlib", "lz4", "zstd"]
 
   # Which additional RFCs are supported?
   rfcs_supported: []
