@@ -4,7 +4,7 @@ import type { ViewerManifest } from './types.js';
  * Default base URL for viewer icons hosted in the capability-manifest repository.
  */
 const DEFAULT_ICONS_BASE_URL =
-  'https://raw.githubusercontent.com/bioimagetools/capability-manifest/host-manifests-and-docs/public/icons';
+  'https://raw.githubusercontent.com/bioimagetools/capability-manifest/main/public/icons';
 
 /**
  * Derive a logo URL for a viewer.
