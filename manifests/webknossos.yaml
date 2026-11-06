@@ -1,0 +1,27 @@
+# Capability manifest for WEBKNOSSOS (https://webknossos.org). The template
+# opens the remote-dataset import page with the data URL prefilled; the user
+# must be signed in to a WEBKNOSSOS organization. Self-hosted deployments
+# override the host via the consumer's instance_template_url.
+viewer:
+  name: "WEBKNOSSOS"
+  version: "26.11.1"
+  repo: "https://github.com/scalableminds/webknossos"
+  template_url: "https://webknossos.org/import?url={DATA_URL}"
+
+capabilities:
+  ome_zarr_versions: [0.4, 0.5]
+
+  # Zarr v2 compressors and Zarr v3 codecs supported by the datastore
+  compression_codecs: ["blosc", "gzip", "zlib", "zstd"]
+
+  rfcs_supported: []
+
+  axes: true
+  scale: true
+  translation: false
+  channels: true
+  timepoints: true
+  labels: false
+  hcs_plates: false
+  bioformats2raw_layout: false
+  omero_metadata: true
