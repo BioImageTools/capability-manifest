@@ -1,0 +1,30 @@
+# Capability manifest for opening OME-Zarr in Fiji through the OME-Zarr update
+# site (https://github.com/BioImageTools/ome-zarr-fiji-java). The template is a
+# fiji:// link handled by Fiji-Latest; clicking it launches (or reuses) a local
+# Fiji and opens the dataset. The user must have Fiji-Latest installed with the
+# OME-Zarr update site enabled, and on Windows/Linux "Enable web links" ticked
+# under Edit -> Options -> Desktop.
+viewer:
+  name: "Fiji"
+  version: "0.10.3"
+  repo: "https://github.com/BioImageTools/ome-zarr-fiji-java"
+  template_url: "fiji://open/url?p={DATA_URL}"
+
+capabilities:
+  # v0.3 needs the non-default N5 backend; v0.6 is not supported yet
+  ome_zarr_versions: [0.4, 0.5]
+
+  # zarr-java backend (default reader)
+  compression_codecs: ["blosc", "gzip", "zlib", "zstd"]
+
+  rfcs_supported: []
+
+  axes: true
+  scale: true
+  translation: false
+  channels: true
+  timepoints: true
+  labels: false
+  hcs_plates: false
+  bioformats2raw_layout: false
+  omero_metadata: true
