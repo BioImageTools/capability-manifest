@@ -114,6 +114,7 @@ This repository hosts canonical capability manifests for well-known OME-Zarr vie
 | [avivator.yaml](manifests/avivator.yaml) | Avivator (Viv) | 0.4 |
 | [validator.yaml](manifests/validator.yaml) | OME-Zarr Validator | 0.4, 0.5, 0.6 |
 | [vole.yaml](manifests/vole.yaml) | Vol-E | 0.4, 0.5 |
+| [vizarr.yaml](manifests/vizarr.yaml) | Vizarr (BioNGFF fork) | 0.4, 0.5, 0.6 |
 
 Consumers can load these manifests by URL directly from GitHub (raw content URLs) or host copies on their own infrastructure.
 

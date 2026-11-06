@@ -1,0 +1,57 @@
+# Capability manifest for Vizarr, the BioNGFF fork of hms-dbmi/vizarr
+# (https://biongff.github.io/vizarr). Purely client-side; reads Zarr with
+# zarrita.js and renders with Viv.
+viewer:
+  name: "Vizarr"
+  version: "1.5.0"
+  repo: "https://github.com/BioNGFF/vizarr"
+  template_url: "https://biongff.github.io/vizarr/?source={DATA_URL}"
+
+capabilities:
+  # Enumeration of OME-Zarr versions that can be loaded
+  ome_zarr_versions: [0.4, 0.5, 0.6]
+
+  # Codecs available through zarrita.js
+  compression_codecs:
+    [
+      "blosc",
+      "lz4",
+      "zstd",
+      "gzip",
+      "zlib",
+      "transpose",
+      "bytes",
+      "crc32c",
+      "vlen-utf8",
+      "json2",
+      "bitround",
+    ]
+
+  rfcs_supported: []
+
+  # Are axis names and units respected?
+  axes: true
+
+  # Are scaling factors respected on multiscales?
+  scale: true
+
+  # Are translation factors respected on multiscales?
+  translation: true
+
+  # Does the tool support multiple channels?
+  channels: true
+
+  # Does the tool support multiple timepoints?
+  timepoints: true
+
+  # Are labels loaded when available?
+  labels: true
+
+  # Are HCS plates loaded when available?
+  hcs_plates: true
+
+  # Does the viewer handle multiple images in a bioformats2raw layout?
+  bioformats2raw_layout: true
+
+  # Is the OMERO metadata used to e.g. color the channels?
+  omero_metadata: true
