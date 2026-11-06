@@ -94,10 +94,10 @@ The library exports TypeScript types for all data structures:
 
 ## Icons
 
-Icons for canonical viewers are hosted in the [`public/icons/`](public/icons/) directory and served via GitHub Pages at:
+Icons for canonical viewers are hosted in the [`public/icons/`](public/icons/) directory of the `main` branch and served from GitHub at:
 
 ```
-https://raw.githubusercontent.com/bioimagetools/capability-manifest/host-manifests-and-docs/public/icons/{slug}.png
+https://raw.githubusercontent.com/bioimagetools/capability-manifest/main/public/icons/{slug}.png
 ```
 
 where `{slug}` is the viewer name lowercased with spaces replaced by hyphens (e.g. `"OME-Zarr Validator"` → `ome-zarr-validator.png`). Consumers can derive this URL automatically and fall back to a local placeholder when the icon is unavailable.

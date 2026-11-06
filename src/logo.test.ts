@@ -23,28 +23,28 @@ describe('getLogoUrl', () => {
   it('derives a URL from the viewer name when no logo field is set', () => {
     const manifest = createManifest('Neuroglancer');
     expect(getLogoUrl(manifest)).toBe(
-      'https://raw.githubusercontent.com/bioimagetools/capability-manifest/host-manifests-and-docs/public/icons/neuroglancer.png'
+      'https://raw.githubusercontent.com/bioimagetools/capability-manifest/main/public/icons/neuroglancer.png'
     );
   });
 
   it('replaces spaces with hyphens in the derived slug', () => {
     const manifest = createManifest('OME-Zarr Validator');
     expect(getLogoUrl(manifest)).toBe(
-      'https://raw.githubusercontent.com/bioimagetools/capability-manifest/host-manifests-and-docs/public/icons/ome-zarr-validator.png'
+      'https://raw.githubusercontent.com/bioimagetools/capability-manifest/main/public/icons/ome-zarr-validator.png'
     );
   });
 
   it('handles multiple consecutive spaces', () => {
     const manifest = createManifest('My  Cool  Viewer');
     expect(getLogoUrl(manifest)).toBe(
-      'https://raw.githubusercontent.com/bioimagetools/capability-manifest/host-manifests-and-docs/public/icons/my-cool-viewer.png'
+      'https://raw.githubusercontent.com/bioimagetools/capability-manifest/main/public/icons/my-cool-viewer.png'
     );
   });
 
   it('does not use an empty string logo as an override', () => {
     const manifest = createManifest('Avivator', '');
     expect(getLogoUrl(manifest)).toBe(
-      'https://raw.githubusercontent.com/bioimagetools/capability-manifest/host-manifests-and-docs/public/icons/avivator.png'
+      'https://raw.githubusercontent.com/bioimagetools/capability-manifest/main/public/icons/avivator.png'
     );
   });
 });
