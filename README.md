@@ -94,10 +94,10 @@ The library exports TypeScript types for all data structures:
 
 ## Icons
 
-Icons for canonical viewers are hosted in the [`public/icons/`](public/icons/) directory and served via GitHub Pages at:
+Icons for canonical viewers are hosted in the [`public/icons/`](public/icons/) directory of the `main` branch and served from GitHub at:
 
 ```
-https://raw.githubusercontent.com/bioimagetools/capability-manifest/host-manifests-and-docs/public/icons/{slug}.png
+https://raw.githubusercontent.com/bioimagetools/capability-manifest/main/public/icons/{slug}.png
 ```
 
 where `{slug}` is the viewer name lowercased with spaces replaced by hyphens (e.g. `"OME-Zarr Validator"` → `ome-zarr-validator.png`). Consumers can derive this URL automatically and fall back to a local placeholder when the icon is unavailable.
@@ -110,11 +110,12 @@ This repository hosts canonical capability manifests for well-known OME-Zarr vie
 
 | Manifest | Viewer | OME-Zarr Versions |
 | --- | --- | --- |
-| [neuroglancer.yaml](manifests/neuroglancer.yaml) | Neuroglancer | 0.4, 0.5, 0.6 |
 | [avivator.yaml](manifests/avivator.yaml) | Avivator (Viv) | 0.4 |
+| [fiji.yaml](manifests/fiji.yaml) | Fiji (OME-Zarr update site, via `fiji://` links) | 0.4, 0.5 |
+| [neuroglancer.yaml](manifests/neuroglancer.yaml) | Neuroglancer | 0.4, 0.5, 0.6 |
 | [validator.yaml](manifests/validator.yaml) | OME-Zarr Validator | 0.4, 0.5, 0.6 |
-| [vole.yaml](manifests/vole.yaml) | Vol-E | 0.4, 0.5 |
 | [vizarr.yaml](manifests/vizarr.yaml) | Vizarr (BioNGFF fork) | 0.4, 0.5, 0.6 |
+| [vole.yaml](manifests/vole.yaml) | Vol-E | 0.4, 0.5 |
 
 Consumers can load these manifests by URL directly from GitHub (raw content URLs) or host copies on their own infrastructure.
 
